@@ -18,7 +18,6 @@ class ConcertApp {
     init() {
         this.setupEventListeners();
         this.loadConcerts();
-        this.renderCalendar();
     }
     
     setupEventListeners() {
@@ -51,17 +50,6 @@ class ConcertApp {
                 this.switchView(view);
             });
         });
-        
-        // Календарь
-        document.getElementById('prev-month').addEventListener('click', () => {
-            this.currentMonth.setMonth(this.currentMonth.getMonth() - 1);
-            this.renderCalendar();
-        });
-        
-        document.getElementById('next-month').addEventListener('click', () => {
-            this.currentMonth.setMonth(this.currentMonth.getMonth() + 1);
-            this.renderCalendar();
-        });
     }
     
     switchView(view) {
@@ -71,7 +59,6 @@ class ConcertApp {
         });
         
         // Скрываем все виды
-        document.getElementById('calendar-view').style.display = 'none';
         document.getElementById('map-view').style.display = 'none';
         document.getElementById('concert-list').style.display = 'none';
         
@@ -79,10 +66,6 @@ class ConcertApp {
         
         // Показываем нужный вид
         switch (view) {
-            case 'calendar':
-                document.getElementById('calendar-view').style.display = 'block';
-                this.renderCalendar();
-                break;
             case 'map':
                 document.getElementById('map-view').style.display = 'block';
                 this.initMap();
@@ -196,35 +179,93 @@ class ConcertApp {
     }
     
     getPlaceCoordinates(placeName) {
-        // Примерные координаты популярных площадок Перми
+        // Реальные координаты популярных площадок Перми
         const knownPlaces = {
+            // Основные концертные площадки
             'БКЗ': [58.0105, 56.2502],
-            'Театр-Театр': [58.0095, 56.2485],
-            'Органный зал': [58.0115, 56.2520],
+            'Большой концертный зал': [58.0105, 56.2502],
             'Пермская филармония': [58.0105, 56.2502],
-            'Дом культуры': [58.0100, 56.2500],
-            'Клуб': [58.0110, 56.2510]
+            'Филармония': [58.0105, 56.2502],
+            
+            // Театры
+            'Театр-Театр': [58.0095, 56.2485],
+            'Пермский театр оперы и балета': [58.0100, 56.2490],
+            'Театр оперы и балета': [58.0100, 56.2490],
+            'ТЮЗ': [58.0110, 56.2520],
+            'Театр юного зрителя': [58.0110, 56.2520],
+            
+            // Клубы и бары
+            'Подвал': [58.0120, 56.2510],
+            'Граффити': [58.0130, 56.2530],
+            'Дом культуры железнодорожников': [58.0080, 56.2470],
+            'ДК железнодорожников': [58.0080, 56.2470],
+            'Дом офицеров': [58.0090, 56.2480],
+            
+            // Органный зал
+            'Органный зал': [58.0115, 56.2520],
+            'Зал органной и камерной музыки': [58.0115, 56.2520],
+            
+            // Современные площадки
+            'Арт-резиденция': [58.0125, 56.2515],
+            'Пространство': [58.0135, 56.2525],
+            'Завод Шпагина': [58.0140, 56.2540],
+            
+            // Рестораны и кафе
+            'Хлеб и вино': [58.0108, 56.2505],
+            'Кафе': [58.0112, 56.2508],
+            'Ресторан': [58.0118, 56.2512],
+            
+            // Общие названия
+            'Клуб': [58.0125, 56.2515],
+            'Бар': [58.0128, 56.2518],
+            'Паб': [58.0132, 56.2522]
         };
         
-        // Ищем по ключевым словам
+        const placeNameLower = placeName.toLowerCase();
+        
+        // Ищем точное совпадение
         for (const [key, coords] of Object.entries(knownPlaces)) {
-            if (placeName.toLowerCase().includes(key.toLowerCase())) {
+            if (placeNameLower === key.toLowerCase()) {
                 return coords;
             }
         }
         
-        // Возвращаем случайные координаты в пределах Перми
+        // Ищем по ключевым словам
+        for (const [key, coords] of Object.entries(knownPlaces)) {
+            if (placeNameLower.includes(key.toLowerCase()) || key.toLowerCase().includes(placeNameLower)) {
+                return coords;
+            }
+        }
+        
+        // Если не найдено, возвращаем координаты в центре Перми с небольшим смещением
         const baseLat = 58.0105;
         const baseLng = 56.2502;
-        const randomLat = baseLat + (Math.random() - 0.5) * 0.02;
-        const randomLng = baseLng + (Math.random() - 0.5) * 0.04;
+        
+        // Создаем детерминированное смещение на основе названия места
+        let hash = 0;
+        for (let i = 0; i < placeName.length; i++) {
+            hash = ((hash << 5) - hash + placeName.charCodeAt(i)) & 0xffffffff;
+        }
+        
+        const randomLat = baseLat + ((hash % 100) / 10000) * (hash % 2 === 0 ? 1 : -1);
+        const randomLng = baseLng + (((hash >> 8) % 100) / 5000) * ((hash >> 4) % 2 === 0 ? 1 : -1);
         
         return [randomLat, randomLng];
     }
     
     createBalloonContent(placeName, concerts) {
         const concertsHtml = concerts.slice(0, 5).map(concert => {
-            const imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
+            let imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
+            
+            // Проверяем на заглушки VK
+            if (!imageUrl || 
+                imageUrl.includes('camera_200.png') || 
+                imageUrl === 'https://vk.ru/images/camera_200.png' ||
+                imageUrl.includes('vk.ru/images/') ||
+                imageUrl === '') {
+                imageUrl = 'zhivoe_logo.jpg';
+            }
+            
             const link = concert.slug ? `https://permlive.ru/event/${concert.slug}` : '#';
             const time = (concert.time || '').slice(0, 5);
             
@@ -240,7 +281,7 @@ class ConcertApp {
             `;
         }).join('');
         
-        const moreText = concerts.length > 5 ? `<div style="text-align: center; padding: 8px; color: #5f6368; font-size: 12px;">и ещё ${concerts.length - 5} концерт${concerts.length - 5 === 1 ? '' : concerts.length - 5 < 5 ? 'а' : 'ов'}</div>` : '';
+        const moreText = concerts.length > 5 ? `<div style="text-align: center; padding: 8px; color: #5f6368; font-size: 12px; font-family: 'Jost Light', sans-serif;">и ещё ${concerts.length - 5} концерт${concerts.length - 5 === 1 ? '' : concerts.length - 5 < 5 ? 'а' : 'ов'}</div>` : '';
         
         return `
             <div class="map-balloon">
@@ -357,9 +398,6 @@ class ConcertApp {
             case 'map':
                 this.updateMapPlacemarks();
                 break;
-            case 'calendar':
-                // Календарь не требует обновления при фильтрации
-                break;
         }
         
         this.updateTitle();
@@ -392,16 +430,25 @@ class ConcertApp {
         
         // Изображение - используем main_image или small_pic
         let imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
-        if (!imageUrl || imageUrl.includes('camera_200.png') || imageUrl === 'https://vk.ru/images/camera_200.png') {
+        
+        // Проверяем на заглушки VK
+        if (!imageUrl || 
+            imageUrl.includes('camera_200.png') || 
+            imageUrl === 'https://vk.ru/images/camera_200.png' ||
+            imageUrl.includes('vk.ru/images/') ||
+            imageUrl === '') {
             imageUrl = 'zhivoe_logo.jpg';
         }
-        // Оптимизируем размер изображения (добавляем параметры для уменьшения)
+        
+        // Если это изображение с permlive.ru, добавляем параметры размера
         if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
-            // Добавляем параметры для получения изображения 300px
-            if (!imageUrl.includes('?')) {
-                imageUrl += '?w=300&h=300&fit=crop';
-            }
+            // Убираем старые параметры если есть
+            imageUrl = imageUrl.split('?')[0];
+            // Добавляем новые параметры для получения изображения 300px
+            imageUrl += '?w=300&h=300&fit=crop&q=80';
         }
+        
+        console.log('Image URL for', title, ':', imageUrl); // Для отладки
         
         // Дата и время
         const dateLabel = this.formatDate(date, time);
@@ -429,7 +476,7 @@ class ConcertApp {
                 <a href="${link}" target="_blank" style="text-decoration: none; color: inherit;">
                     <div class="concert-header">
                         <img src="${imageUrl}" alt="${title}" class="concert-image" 
-                             onerror="this.src='zhivoe_logo.jpg'">
+                             onerror="console.log('Image failed:', this.src); this.src='zhivoe_logo.jpg'">
                         <div class="concert-info">
                             <div class="concert-title">${title}</div>
                             <div class="concert-meta">

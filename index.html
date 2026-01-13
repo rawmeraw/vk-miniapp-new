@@ -36,30 +36,10 @@
                 <i class="fas fa-list"></i>
                 Список
             </button>
-            <button class="view-btn" data-view="calendar">
-                <i class="fas fa-calendar"></i>
-                Календарь
-            </button>
             <button class="view-btn" data-view="map">
                 <i class="fas fa-map"></i>
                 Карта
             </button>
-        </div>
-
-        <!-- Календарь -->
-        <div class="calendar-container" id="calendar-view" style="display: none;">
-            <div class="calendar-header">
-                <button class="calendar-nav" id="prev-month">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="calendar-title" id="calendar-title">Январь 2025</div>
-                <button class="calendar-nav" id="next-month">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-            <div class="calendar-dates" id="calendar-dates">
-                <!-- Даты будут добавлены через JS -->
-            </div>
         </div>
 
         <!-- Карта -->
@@ -94,6 +74,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Предзагрузка Font Awesome -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+    
     <style>
         @font-face {
             font-family: 'Jost';
@@ -107,13 +93,27 @@
             font-weight: 200;
             font-display: swap;
         }
+        
+        /* Fallback для иконок пока не загрузился Font Awesome */
+        .fas::before, .fa::before {
+            font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', sans-serif;
+            font-weight: 900;
+        }
+        
+        /* Базовые иконки как fallback */
+        .fa-search::before { content: "🔍"; }
+        .fa-times::before { content: "✕"; }
+        .fa-list::before { content: "☰"; }
+        .fa-map::before { content: "🗺"; }
+        .fa-clock::before { content: "🕐"; }
+        .fa-map-marker-alt::before { content: "📍"; }
+        .fa-star::before { content: "⭐"; }
+        .fa-ticket-alt::before { content: "🎫"; }
+        .fa-crosshairs::before { content: "⊕"; }
     </style>
 
     <!-- Yandex Maps API -->
     <script src="https://api-maps.yandex.ru/2.1/?apikey=d3e2e75a-dbb2-4497-9993-758e390d0863&lang=ru_RU" type="text/javascript"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- VK Bridge -->
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>

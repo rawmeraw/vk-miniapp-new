@@ -102,7 +102,7 @@ class ConcertApp {
             this.map = new ymaps.Map('map', {
                 center: [58.0105, 56.2502],
                 zoom: 12,
-                controls: [] // Убираем все кнопки управления
+                controls: ['zoomControl'] // Возвращаем кнопки масштаба
             });
             
             // Добавляем метки концертов
@@ -149,6 +149,15 @@ class ConcertApp {
         todayConcerts.forEach((concert, index) => {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
             const coords = this.getPlaceCoordinates(placeName, concert.place);
+            
+            // ОТЛАДКА КООРДИНАТ
+            console.log(`=== COORDINATE DEBUG ===`);
+            console.log(`Concert: "${concert.title}"`);
+            console.log(`Place name: "${placeName}"`);
+            console.log(`Raw place data:`, concert.place);
+            console.log(`Raw coordinates from API:`, concert.place?.coordinates);
+            console.log(`Parsed coordinates:`, coords);
+            console.log(`========================`);
             
             // Добавляем небольшое смещение если концерты в одном месте
             const offset = index * 0.0001;
@@ -220,13 +229,24 @@ class ConcertApp {
                 // Формат: "58.015634, 56.233587"
                 const coordStr = place.coordinates.toString();
                 
+                console.log(`=== PARSING COORDINATES FOR ${placeName} ===`);
+                console.log(`Original coordinate string: "${coordStr}"`);
+                
                 // Используем тот же алгоритм что и на основном сайте:
                 // lat = coord|cut:" "|cut:","|slice:":9"
                 // lng = coord|cut:" "|slice:"10:19"
                 const cleanCoordForLat = coordStr.replace(/\s/g, '').replace(/,/g, '');
                 const cleanCoordForLng = coordStr.replace(/\s/g, '');
+                
+                console.log(`Clean coord for lat (no spaces, no commas): "${cleanCoordForLat}"`);
+                console.log(`Clean coord for lng (no spaces): "${cleanCoordForLng}"`);
+                
                 const lat = parseFloat(cleanCoordForLat.slice(0, 9));
                 const lng = parseFloat(cleanCoordForLng.slice(10, 19));
+                
+                console.log(`Lat slice (0:9): "${cleanCoordForLat.slice(0, 9)}" -> ${lat}`);
+                console.log(`Lng slice (10:19): "${cleanCoordForLng.slice(10, 19)}" -> ${lng}`);
+                console.log(`=== END PARSING ===`);
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
                     console.log(`Using API coordinates for ${placeName}: [${lat}, ${lng}] from "${place.coordinates}"`);

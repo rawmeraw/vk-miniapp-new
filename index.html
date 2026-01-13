@@ -132,6 +132,14 @@
         }
         
         /* Неактивные кнопки списка/карты с цветом текста */
+        .view-btn:not(.active) i::before {
+            color: #5f6368 !important; /* Цвет текста неактивной кнопки */
+        }
+        
+        .view-btn.active i::before {
+            color: white !important; /* Белые иконки только для активной кнопки */
+        }
+        
         .view-btn:not(.active) i {
             color: #5f6368 !important; /* Цвет текста неактивной кнопки */
             font-weight: 400 !important;
@@ -142,9 +150,14 @@
             font-weight: 400 !important;
         }
         
-        /* Поднимаем иконку списка на 3px */
+        /* Поднимаем иконку списка на 1px */
         .fa-list {
-            transform: translateY(-3px);
+            transform: translateY(-1px);
+        }
+        
+        /* Опускаем h1 на 1px */
+        .logo h1 {
+            transform: translateY(1px);
         }
     </style>
 

@@ -157,7 +157,7 @@ class ConcertApp {
             const place = firstConcert.place;
             const coords = this.getPlaceCoordinates(placeName, place);
             
-            // Создаем кастомный маркер с временем и названием
+            // Создаем стандартный маркер без кастомной SVG
             const concert = concerts[0]; // Берем первый концерт для маркера
             const time = (concert.time || '').slice(0, 5);
             
@@ -165,19 +165,9 @@ class ConcertApp {
                 balloonContent: this.createBalloonContent(placeName, concerts, place),
                 hintContent: this.createHintContent(concerts)
             }, {
-                // Кастомная иконка с временем и названием
-                iconLayout: 'default#imageWithContent',
-                iconImageHref: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60">
-                        <rect x="2" y="2" width="116" height="56" rx="8" fill="white" stroke="#ff6b35" stroke-width="2"/>
-                        <text x="60" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d1d1f">${time || 'Время'}</text>
-                        <text x="60" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#5f6368">${concert.title.length > 15 ? concert.title.substring(0, 15) + '...' : concert.title}</text>
-                        <text x="60" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#ff6b35">${placeName.length > 18 ? placeName.substring(0, 18) + '...' : placeName}</text>
-                    </svg>
-                `),
-                iconImageSize: [120, 60],
-                iconImageOffset: [-60, -60],
-                balloonPanelMaxMapArea: 0
+                // Используем стандартную иконку вместо кастомной SVG
+                preset: 'islands#orangeDotIcon',
+                iconColor: '#ff6b35'
             });
             
             this.map.geoObjects.add(placemark);
@@ -289,14 +279,24 @@ class ConcertApp {
     
     createBalloonContent(placeName, concerts, place) {
         const concertsHtml = concerts.slice(0, 3).map(concert => {
-            let imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
+            // Используем ту же логику выбора изображения
+            const imageFields = [
+                concert.main_image,
+                concert.small_pic, 
+                concert.image,
+                concert.poster,
+                concert.photo
+            ];
             
-            // Проверяем на заглушки VK
-            if (!imageUrl || 
-                imageUrl.includes('camera_200.png') || 
-                imageUrl === 'https://vk.ru/images/camera_200.png' ||
-                imageUrl.includes('vk.ru/images/') ||
-                imageUrl === '') {
+            let imageUrl = null;
+            for (const field of imageFields) {
+                if (this.isValidImageUrl(field)) {
+                    imageUrl = field;
+                    break;
+                }
+            }
+            
+            if (!imageUrl) {
                 imageUrl = 'zhivoe_logo.jpg';
             }
             
@@ -385,13 +385,20 @@ class ConcertApp {
                 
                 // Отладка первого концерта
                 if (data[0]) {
-                    console.log('First concert sample:', {
-                        title: data[0].title,
+                    console.log('=== FIRST CONCERT SAMPLE ===');
+                    console.log('Title:', data[0].title);
+                    console.log('Date:', data[0].date);
+                    console.log('Time:', data[0].time);
+                    console.log('Rating:', data[0].rating);
+                    console.log('Tags:', data[0].tags);
+                    console.log('Tag categories:', data[0].tag_categories);
+                    console.log('Images:', {
                         main_image: data[0].main_image,
                         small_pic: data[0].small_pic,
-                        image: data[0].image,
-                        place: data[0].place
+                        image: data[0].image
                     });
+                    console.log('Place:', data[0].place);
+                    console.log('=== END SAMPLE ===');
                 }
                 
                 // Фильтруем будущие концерты
@@ -422,15 +429,34 @@ class ConcertApp {
     
     filterFutureConcerts(concerts) {
         const now = new Date();
-        return concerts.filter(concert => {
-            if (!concert.date || !concert.time) return true;
+        console.log('=== FILTERING CONCERTS ===');
+        console.log('Total concerts before filtering:', concerts.length);
+        console.log('Current time:', now.toISOString());
+        
+        const filtered = concerts.filter((concert, index) => {
+            if (!concert.date || !concert.time) {
+                console.log(`Concert ${index + 1} (${concert.title}): No date/time - KEEPING`);
+                return true; // Оставляем концерты без даты/времени
+            }
             
             const [year, month, day] = concert.date.split('-').map(Number);
             const [hour, minute] = (concert.time || '00:00').split(':').map(Number);
             const concertDate = new Date(year, month - 1, day, hour, minute);
             
-            return concertDate >= now;
+            const isFuture = concertDate >= now;
+            if (!isFuture) {
+                console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - FILTERED OUT (past)`);
+            } else {
+                console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - KEEPING (future)`);
+            }
+            
+            return isFuture;
         });
+        
+        console.log('Concerts after filtering:', filtered.length);
+        console.log('Filtered out:', concerts.length - filtered.length, 'concerts');
+        console.log('=== END FILTERING ===');
+        return filtered;
     }
     
     sortConcerts(concerts) {
@@ -514,41 +540,79 @@ class ConcertApp {
         this.updateTitle();
     }
     
+    isValidImageUrl(url) {
+        if (!url || url === '' || url === null || url === undefined) {
+            return false;
+        }
+        
+        // Проверяем на заглушки VK
+        if (url.includes('camera_200.png') || 
+            url === 'https://vk.ru/images/camera_200.png' ||
+            url.includes('vk.ru/images/') ||
+            url.includes('vk.com/images/')) {
+            return false;
+        }
+        
+        // Проверяем на другие заглушки
+        if (url.includes('placeholder') || 
+            url.includes('no-image') ||
+            url.includes('default.jpg') ||
+            url.includes('stub.')) {
+            return false;
+        }
+        
+        return true;
+    }
+    
     formatConcert(concert) {
         const title = concert.title || 'Без названия';
         const date = concert.date || '';
         const time = (concert.time || '').slice(0, 5);
         const place = (concert.place?.name || concert.place || '');
         
-        // Изображение - используем main_image или small_pic
-        let imageUrl = concert.main_image || concert.small_pic || concert.image || 'zhivoe_logo.jpg';
+        // Изображение - пробуем разные поля в порядке приоритета
+        const imageFields = [
+            concert.main_image,
+            concert.small_pic, 
+            concert.image,
+            concert.poster,
+            concert.photo
+        ];
         
-        console.log(`Concert: ${title}`);
-        console.log('  main_image:', concert.main_image);
-        console.log('  small_pic:', concert.small_pic);
-        console.log('  image:', concert.image);
-        console.log('  selected imageUrl:', imageUrl);
+        let imageUrl = null;
         
-        // Проверяем на заглушки VK и пустые значения
-        if (!imageUrl || 
-            imageUrl.includes('camera_200.png') || 
-            imageUrl === 'https://vk.ru/images/camera_200.png' ||
-            imageUrl.includes('vk.ru/images/') ||
-            imageUrl === '' ||
-            imageUrl === null ||
-            imageUrl === undefined) {
+        console.log(`=== IMAGE DEBUG for ${title} ===`);
+        console.log('Available image fields:', {
+            main_image: concert.main_image,
+            small_pic: concert.small_pic,
+            image: concert.image,
+            poster: concert.poster,
+            photo: concert.photo
+        });
+        
+        // Проверяем каждое поле на валидность
+        for (const field of imageFields) {
+            if (this.isValidImageUrl(field)) {
+                imageUrl = field;
+                console.log('  -> Selected valid image:', imageUrl);
+                break;
+            }
+        }
+        
+        if (!imageUrl) {
             imageUrl = 'zhivoe_logo.jpg';
-            console.log('  -> Using fallback logo');
+            console.log('  -> No valid images found, using fallback logo');
+        } else {
+            // Если это изображение с permlive.ru, добавляем параметры размера
+            if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
+                // Убираем старые параметры если есть
+                imageUrl = imageUrl.split('?')[0];
+                // Добавляем новые параметры для получения изображения 300px
+                imageUrl += '?w=300&h=300&fit=crop&q=80';
+                console.log('  -> Optimized URL:', imageUrl);
+            }
         }
-        
-        // Если это изображение с permlive.ru, добавляем параметры размера
-        if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
-            // Убираем старые параметры если есть
-            imageUrl = imageUrl.split('?')[0];
-            // Добавляем новые параметры для получения изображения 300px
-            imageUrl += '?w=300&h=300&fit=crop&q=80';
-            console.log('  -> Optimized URL:', imageUrl);
-        }
+        console.log('=== END IMAGE DEBUG ===');
         
         // Дата и время
         const dateLabel = this.formatDate(date, time);
@@ -576,9 +640,17 @@ class ConcertApp {
                 <a href="${link}" target="_blank" style="text-decoration: none; color: inherit;">
                     <div class="concert-header">
                         <img src="${imageUrl}" alt="${title}" class="concert-image" 
-                             onerror="console.log('Image failed to load:', this.src); this.src='zhivoe_logo.jpg'">
+                             onerror="console.log('Image failed to load for ${title}:', this.src); 
+                                      if (!this.src.includes('zhivoe_logo.jpg')) { 
+                                          console.log('Retrying with fallback logo'); 
+                                          this.src='zhivoe_logo.jpg'; 
+                                      }"
+                             onload="console.log('Image loaded successfully for ${title}:', this.src)">
                         <div class="concert-info">
-                            <div class="concert-title">${title}</div>
+                            <div class="concert-title-container">
+                                ${this.formatRatingBadge(concert.rating)}
+                                <div class="concert-title">${title}</div>
+                            </div>
                             <div class="concert-meta">
                                 <div class="concert-datetime">
                                     <i class="fas fa-clock"></i>
@@ -597,7 +669,6 @@ class ConcertApp {
                         <div class="concert-tags">
                             ${tags}
                         </div>
-                        ${rating}
                     </div>
                 </a>
                 ${ticketButton}
@@ -650,52 +721,76 @@ class ConcertApp {
     formatTags(concert) {
         if (!Array.isArray(concert.tags) || !concert.tags.length) return '';
         
-        // Показываем только первый тег с цветовой схемой
-        const firstTag = concert.tags[0];
-        const tagName = (firstTag.name || firstTag).toLowerCase();
-        const extraCount = concert.tags.length - 1;
+        console.log(`=== TAGS DEBUG for ${concert.title} ===`);
+        console.log('Tags:', concert.tags);
+        console.log('Tag categories:', concert.tag_categories);
         
-        let tagText = firstTag.name || firstTag;
-        if (extraCount > 0) {
-            tagText += ` +${extraCount}`;
-        }
-        
-        // Определяем цветовую схему на основе категории тега
-        let tagClass = 'tag genre';
-        if (concert.tag_categories && concert.tag_categories.length > 0) {
-            const category = concert.tag_categories[0].toLowerCase();
-            if (category === 'live') {
-                tagClass += ' live';
-            } else if (category === 'pop') {
-                tagClass += ' pop';
-            } else if (category === 'classic') {
-                tagClass += ' classic';
+        // Показываем все теги с правильными цветами
+        return concert.tags.map((tag, index) => {
+            const tagName = tag.name || tag;
+            
+            // Определяем цветовую схему на основе категории тега
+            let tagClass = 'tag genre';
+            
+            // Сначала проверяем tag_categories если есть
+            if (concert.tag_categories && concert.tag_categories.length > index) {
+                const category = concert.tag_categories[index].toLowerCase();
+                console.log(`Tag "${tagName}" has category: ${category}`);
+                if (category === 'live') {
+                    tagClass += ' live';
+                } else if (category === 'pop') {
+                    tagClass += ' pop';
+                } else if (category === 'classic') {
+                    tagClass += ' classic';
+                }
+            } else {
+                // Fallback: определяем по названию тега
+                const tagNameLower = tagName.toLowerCase();
+                console.log(`Tag "${tagName}" - using fallback categorization`);
+                
+                if (tagNameLower.includes('live') || tagNameLower.includes('рок') || tagNameLower.includes('метал') || 
+                    tagNameLower.includes('панк') || tagNameLower.includes('хардкор') || tagNameLower.includes('альтернатив')) {
+                    tagClass += ' live';
+                    console.log('  -> Categorized as LIVE');
+                } else if (tagNameLower.includes('pop') || tagNameLower.includes('поп') || tagNameLower.includes('эстрада') || 
+                          tagNameLower.includes('диско') || tagNameLower.includes('электрон') || tagNameLower.includes('хип-хоп')) {
+                    tagClass += ' pop';
+                    console.log('  -> Categorized as POP');
+                } else if (tagNameLower.includes('classic') || tagNameLower.includes('классик') || tagNameLower.includes('джаз') || 
+                          tagNameLower.includes('блюз') || tagNameLower.includes('фолк') || tagNameLower.includes('кантри') ||
+                          tagNameLower.includes('инди') || tagNameLower.includes('авторск')) {
+                    tagClass += ' classic';
+                    console.log('  -> Categorized as CLASSIC');
+                } else {
+                    console.log('  -> No specific category, using default');
+                }
             }
-        } else {
-            // Fallback: определяем по названию тега
-            if (tagName.includes('live') || tagName.includes('рок') || tagName.includes('метал')) {
-                tagClass += ' live';
-            } else if (tagName.includes('pop') || tagName.includes('поп') || tagName.includes('эстрада')) {
-                tagClass += ' pop';
-            } else if (tagName.includes('classic') || tagName.includes('классик') || tagName.includes('джаз')) {
-                tagClass += ' classic';
-            }
-        }
-        
-        return `<span class="${tagClass}">${tagText}</span>`;
+            
+            return `<span class="${tagClass}">${tagName}</span>`;
+        }).join(' ');
     }
     
-    formatRating(rating) {
+    formatRatingBadge(rating) {
         const ratingValue = parseFloat(rating || 0);
-        if (ratingValue < 4.0) return '';
+        console.log(`Rating for concert: ${rating} -> parsed: ${ratingValue}`);
         
-        const ratingClass = ratingValue >= 5.0 ? 'rating-high' : '';
+        if (ratingValue < 4.0) {
+            console.log('  -> Rating below 4.0, not showing badge');
+            return '';
+        }
+        
+        console.log('  -> Showing rating badge');
         return `
-            <div class="concert-rating ${ratingClass}">
+            <div class="rating-badge-inline">
                 <i class="fas fa-star"></i>
                 ${ratingValue.toFixed(1)}
             </div>
         `;
+    }
+    
+    formatRating(rating) {
+        // Эта функция больше не используется, так как рейтинг теперь показывается inline
+        return '';
     }
     
     renderCalendar() {

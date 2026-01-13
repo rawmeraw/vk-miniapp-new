@@ -146,9 +146,20 @@ class ConcertApp {
         });
         this.mapPlacemarks = [];
         
+        // Получаем сегодняшнюю дату
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Фильтруем только сегодняшние концерты
+        const todayConcerts = this.filteredConcerts.filter(concert => concert.date === today);
+        
+        if (todayConcerts.length === 0) {
+            // Если нет концертов на сегодня, показываем сообщение
+            return;
+        }
+        
         // Группируем концерты по местам
         const placeGroups = {};
-        this.filteredConcerts.forEach(concert => {
+        todayConcerts.forEach(concert => {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
             if (!placeGroups[placeName]) {
                 placeGroups[placeName] = [];
@@ -162,7 +173,8 @@ class ConcertApp {
             const coords = this.getPlaceCoordinates(placeName);
             
             const placemark = new ymaps.Placemark(coords, {
-                balloonContent: this.createBalloonContent(placeName, concerts)
+                balloonContent: this.createBalloonContent(placeName, concerts),
+                hintContent: this.createHintContent(concerts)
             }, {
                 preset: 'islands#redDotIcon',
                 balloonPanelMaxMapArea: 0
@@ -171,6 +183,16 @@ class ConcertApp {
             this.map.geoObjects.add(placemark);
             this.mapPlacemarks.push(placemark);
         });
+    }
+    
+    createHintContent(concerts) {
+        if (concerts.length === 1) {
+            const concert = concerts[0];
+            const time = (concert.time || '').slice(0, 5);
+            return `${time} - ${concert.title}`;
+        } else {
+            return `${concerts.length} концерт${concerts.length === 1 ? '' : concerts.length < 5 ? 'а' : 'ов'} сегодня`;
+        }
     }
     
     getPlaceCoordinates(placeName) {
@@ -202,9 +224,9 @@ class ConcertApp {
     
     createBalloonContent(placeName, concerts) {
         const concertsHtml = concerts.slice(0, 5).map(concert => {
-            const imageUrl = concert.small_pic || 'zhivoe_logo.jpg';
+            const imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
             const link = concert.slug ? `https://permlive.ru/event/${concert.slug}` : '#';
-            const dateLabel = this.formatDate(concert.date, concert.time);
+            const time = (concert.time || '').slice(0, 5);
             
             return `
                 <a href="${link}" class="map-balloon-concert" target="_blank">
@@ -212,7 +234,7 @@ class ConcertApp {
                          onerror="this.src='zhivoe_logo.jpg'">
                     <div class="map-balloon-concert-info">
                         <div class="map-balloon-concert-title">${concert.title}</div>
-                        <div class="map-balloon-concert-date">${dateLabel}</div>
+                        <div class="map-balloon-concert-date">${time ? `${time}` : 'Время уточняется'}</div>
                     </div>
                 </a>
             `;
@@ -224,7 +246,7 @@ class ConcertApp {
             <div class="map-balloon">
                 <div class="map-balloon-header">
                     <div class="map-balloon-title">${placeName}</div>
-                    <div class="map-balloon-place">${concerts.length} концерт${concerts.length === 1 ? '' : concerts.length < 5 ? 'а' : 'ов'}</div>
+                    <div class="map-balloon-place">Сегодня: ${concerts.length} концерт${concerts.length === 1 ? '' : concerts.length < 5 ? 'а' : 'ов'}</div>
                 </div>
                 <div class="map-balloon-body">
                     <div class="map-balloon-concerts">
@@ -368,19 +390,26 @@ class ConcertApp {
         const time = (concert.time || '').slice(0, 5);
         const place = (concert.place?.name || concert.place || '');
         
-        // Изображение
-        let imageUrl = concert.small_pic || 'zhivoe_logo.jpg';
-        if (!imageUrl || imageUrl.includes('camera_200.png')) {
+        // Изображение - используем main_image или small_pic
+        let imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
+        if (!imageUrl || imageUrl.includes('camera_200.png') || imageUrl === 'https://vk.ru/images/camera_200.png') {
             imageUrl = 'zhivoe_logo.jpg';
+        }
+        // Оптимизируем размер изображения (добавляем параметры для уменьшения)
+        if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
+            // Добавляем параметры для получения изображения 300px
+            if (!imageUrl.includes('?')) {
+                imageUrl += '?w=300&h=300&fit=crop';
+            }
         }
         
         // Дата и время
         const dateLabel = this.formatDate(date, time);
         
-        // Цена
-        const priceTag = this.formatPrice(concert.price);
+        // Кнопка покупки билетов
+        const ticketButton = this.formatTicketButton(concert);
         
-        // Теги
+        // Теги с цветовой схемой
         const tags = this.formatTags(concert);
         
         // Рейтинг
@@ -396,34 +425,36 @@ class ConcertApp {
         if (concert.is_cancelled) cardClasses.push('cancelled');
         
         return `
-            <a href="${link}" class="${cardClasses.join(' ')}" target="_blank">
-                <div class="concert-header">
-                    <img src="${imageUrl}" alt="${title}" class="concert-image" 
-                         onerror="this.src='zhivoe_logo.jpg'">
-                    <div class="concert-info">
-                        <div class="concert-title">${title}</div>
-                        <div class="concert-meta">
-                            <div class="concert-datetime">
-                                <i class="fas fa-clock"></i>
-                                ${dateLabel}
-                            </div>
-                            ${place ? `
-                                <div class="concert-venue">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    ${place}
+            <div class="${cardClasses.join(' ')}">
+                <a href="${link}" target="_blank" style="text-decoration: none; color: inherit;">
+                    <div class="concert-header">
+                        <img src="${imageUrl}" alt="${title}" class="concert-image" 
+                             onerror="this.src='zhivoe_logo.jpg'">
+                        <div class="concert-info">
+                            <div class="concert-title">${title}</div>
+                            <div class="concert-meta">
+                                <div class="concert-datetime">
+                                    <i class="fas fa-clock"></i>
+                                    ${dateLabel}
                                 </div>
-                            ` : ''}
+                                ${place ? `
+                                    <div class="concert-venue">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        ${place}
+                                    </div>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="concert-footer">
-                    <div class="concert-tags">
-                        ${tags}
-                        ${priceTag}
+                    <div class="concert-footer">
+                        <div class="concert-tags">
+                            ${tags}
+                        </div>
+                        ${rating}
                     </div>
-                    ${rating}
-                </div>
-            </a>
+                </a>
+                ${ticketButton}
+            </div>
         `;
     }
     
@@ -448,11 +479,23 @@ class ConcertApp {
         return time ? `${dateStr}, ${time}` : dateStr;
     }
     
-    formatPrice(price) {
-        if (price === 0 || price === '0' || price === null || price === undefined) {
-            return '<span class="tag free">Бесплатно</span>';
-        } else if (price > 0) {
-            return `<span class="tag price">${price}₽</span>`;
+    formatTicketButton(concert) {
+        if (concert.tickets && typeof concert.tickets === 'string' && concert.tickets.trim()) {
+            const price = concert.price;
+            let buttonText = 'Купить билет';
+            
+            if (price && price > 0) {
+                buttonText = `Купить билет от ${price}₽`;
+            } else if (price === 0) {
+                buttonText = 'Бесплатный вход';
+            }
+            
+            return `
+                <a href="${concert.tickets}" class="buy-ticket-btn" target="_blank" onclick="event.stopPropagation();">
+                    <i class="fas fa-ticket-alt"></i>
+                    ${buttonText}
+                </a>
+            `;
         }
         return '';
     }
@@ -460,17 +503,39 @@ class ConcertApp {
     formatTags(concert) {
         if (!Array.isArray(concert.tags) || !concert.tags.length) return '';
         
-        // Показываем только первый тег
+        // Показываем только первый тег с цветовой схемой
         const firstTag = concert.tags[0];
-        const tagName = firstTag.name || firstTag;
+        const tagName = (firstTag.name || firstTag).toLowerCase();
         const extraCount = concert.tags.length - 1;
         
-        let tagText = tagName;
+        let tagText = firstTag.name || firstTag;
         if (extraCount > 0) {
             tagText += ` +${extraCount}`;
         }
         
-        return `<span class="tag genre">${tagText}</span>`;
+        // Определяем цветовую схему на основе категории тега
+        let tagClass = 'tag genre';
+        if (concert.tag_categories && concert.tag_categories.length > 0) {
+            const category = concert.tag_categories[0].toLowerCase();
+            if (category === 'live') {
+                tagClass += ' live';
+            } else if (category === 'pop') {
+                tagClass += ' pop';
+            } else if (category === 'classic') {
+                tagClass += ' classic';
+            }
+        } else {
+            // Fallback: определяем по названию тега
+            if (tagName.includes('live') || tagName.includes('рок') || tagName.includes('метал')) {
+                tagClass += ' live';
+            } else if (tagName.includes('pop') || tagName.includes('поп') || tagName.includes('эстрада')) {
+                tagClass += ' pop';
+            } else if (tagName.includes('classic') || tagName.includes('классик') || tagName.includes('джаз')) {
+                tagClass += ' classic';
+            }
+        }
+        
+        return `<span class="${tagClass}">${tagText}</span>`;
     }
     
     formatRating(rating) {
@@ -497,13 +562,21 @@ class ConcertApp {
         ];
         titleElement.textContent = `${monthNames[this.currentMonth.getMonth()]} ${this.currentMonth.getFullYear()}`;
         
-        // Генерируем даты
-        const startDate = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth(), 1);
-        const endDate = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() + 1, 0);
+        // Генерируем даты текущего месяца
+        const year = this.currentMonth.getFullYear();
+        const month = this.currentMonth.getMonth();
+        const today = new Date();
+        
+        // Первый и последний день месяца
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
         
         const dates = [];
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-            dates.push(new Date(d));
+        for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+            // Показываем только будущие даты (включая сегодня)
+            if (d >= new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+                dates.push(new Date(d));
+            }
         }
         
         // Рендерим даты

@@ -45,14 +45,6 @@
         <!-- Карта -->
         <div class="map-container" id="map-view" style="display: none;">
             <div id="map" class="map"></div>
-            <div class="map-controls">
-                <button class="map-control-btn" id="map-center">
-                    <i class="fas fa-crosshairs"></i>
-                </button>
-                <button class="map-control-btn" id="map-list-toggle">
-                    <i class="fas fa-list"></i>
-                </button>
-            </div>
         </div>
 
         <!-- Список концертов -->
@@ -107,7 +99,7 @@
             font-weight: 400 !important; /* Плоские иконки */
         }
         
-        /* Базовые иконки как fallback */
+        /* Базовые иконки как fallback - ПЛОСКИЕ */
         .fa-search::before { content: "🔍"; }
         .fa-times::before { content: "✕"; }
         .fa-list::before { content: "☰"; }
@@ -118,6 +110,10 @@
         .fa-ticket-alt::before { content: "🎫"; }
         .fa-crosshairs::before { content: "⊕"; }
         .fa-route::before { content: "🛣"; }
+        
+        /* Используем плоские версии иконок */
+        .fa-clock::before { content: "⏰"; }
+        .fa-map-marker-alt::before { content: "📍"; }
         
         /* Специальные цвета для некоторых иконок */
         .search-icon, .clear-btn i {

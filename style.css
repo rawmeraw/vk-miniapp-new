@@ -80,8 +80,8 @@ body {
 }
 
 .search-box:focus-within {
-    background: #e8f0fe;
-    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+    background: #fff2e6;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);
 }
 
 .search-icon {
@@ -158,11 +158,13 @@ body {
 
 .view-btn i {
     font-size: 12px;
-    color: inherit; /* Наследуем цвет от родителя */
+    color: #5f6368 !important; /* Неактивные иконки серые */
+    font-weight: 400 !important;
 }
 
 .view-btn.active i {
-    color: white !important; /* Белые иконки только для активной кнопки */
+    color: white !important; /* Активные иконки белые */
+    font-weight: 400 !important;
 }
 
 /* Карта */
@@ -552,8 +554,8 @@ body {
 }
 
 .concerts-count {
-    background: #e8f0fe;
-    color: #1967d2;
+    background: #fff2e6;
+    color: #ff6b35;
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 14px;

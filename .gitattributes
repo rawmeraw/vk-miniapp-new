@@ -1,0 +1,9 @@
+# Exclude development files from GitHub Pages deployment
+.github/ export-ignore
+.git/ export-ignore
+node_modules/ export-ignore
+*.md export-ignore
+package*.json export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+test.html export-ignore

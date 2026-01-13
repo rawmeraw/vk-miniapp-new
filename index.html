@@ -33,11 +33,9 @@
         <!-- Переключатель вида -->
         <div class="view-switcher">
             <button class="view-btn active" data-view="list">
-                <i class="fas fa-list"></i>
                 Список
             </button>
             <button class="view-btn" data-view="map">
-                <i class="fas fa-map"></i>
                 Карта
             </button>
         </div>
@@ -86,79 +84,34 @@
             font-display: swap;
         }
         
-        /* Fallback для иконок пока не загрузился Font Awesome */
-        .fas::before, .fa::before {
-            font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', sans-serif;
-            font-weight: 900;
-            color: white;
-        }
-        
-        /* Белые плоские иконки */
-        .fas, .fa {
-            color: white !important;
-            font-weight: 400 !important; /* Плоские иконки */
-        }
-        
-        /* Базовые иконки как fallback - ПЛОСКИЕ */
-        .fa-search::before { content: "🔍"; }
-        .fa-times::before { content: "✕"; }
-        .fa-list::before { content: "☰"; }
-        .fa-map::before { content: "🗺"; }
-        .fa-clock::before { content: "🕐"; }
-        .fa-map-marker-alt::before { content: "📍"; }
-        .fa-star::before { content: "⭐"; }
-        .fa-ticket-alt::before { content: "🎫"; }
-        .fa-crosshairs::before { content: "⊕"; }
-        .fa-route::before { content: "🛣"; }
-        
-        /* Используем плоские версии иконок */
-        .fa-clock::before { content: "⏰"; }
-        .fa-map-marker-alt::before { content: "📍"; }
-        
-        /* Специальные цвета для некоторых иконок */
+        /* Иконка поиска - цвет как у placeholder */
         .search-icon {
-            color: #ff6b35 !important;
+            color: #5f6368 !important;
             font-weight: 400 !important;
         }
         
+        /* Кнопка очистки */
         .clear-btn i {
             color: #5f6368 !important;
             font-weight: 400 !important;
         }
         
+        /* Звездочка рейтинга - плоская желтая */
         .rating-badge-inline i {
-            color: #ffd700 !important; /* Золотая звездочка */
+            color: #ffd700 !important;
             font-weight: 400 !important;
         }
         
-        /* Неактивные кнопки списка/карты с цветом текста */
-        .view-btn:not(.active) i::before {
-            color: #5f6368 !important; /* Цвет текста неактивной кнопки */
+        /* Убираем иконки у кнопок списка/карты */
+        .view-btn i {
+            display: none !important;
         }
         
-        .view-btn.active i::before {
-            color: white !important; /* Белые иконки только для активной кнопки */
-        }
-        
-        .view-btn:not(.active) i {
-            color: #5f6368 !important; /* Цвет текста неактивной кнопки */
-            font-weight: 400 !important;
-        }
-        
-        .view-btn.active i {
-            color: white !important; /* Белые иконки только для активной кнопки */
-            font-weight: 400 !important;
-        }
-        
-        /* Поднимаем иконку списка на 1px */
-        .fa-list {
-            transform: translateY(-1px);
-        }
-        
-        /* Опускаем h1 на 1px */
+        /* Позиционирование */
         .logo h1 {
             transform: translateY(1px);
         }
+    </style>
     </style>
 
     <!-- Yandex Maps API -->

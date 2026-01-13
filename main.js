@@ -150,20 +150,9 @@ class ConcertApp {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
             const coords = this.getPlaceCoordinates(placeName, concert.place);
             
-            // ОТЛАДКА КООРДИНАТ
-            console.log(`=== COORDINATE DEBUG ===`);
-            console.log(`Concert: "${concert.title}"`);
-            console.log(`Place name: "${placeName}"`);
-            console.log(`Raw place data:`, concert.place);
-            console.log(`Raw coordinates from API:`, concert.place?.coordinates);
-            console.log(`Parsed coordinates:`, coords);
-            console.log(`========================`);
-            
             // Добавляем небольшое смещение если концерты в одном месте
             const offset = index * 0.0001;
             const adjustedCoords = [coords[0] + offset, coords[1] + offset];
-            
-            console.log(`Creating marker ${index + 1} for "${concert.title}" at ${placeName}:`, adjustedCoords);
             
             // Определяем цвет маркера на основе тегов (как на основном сайте)
             let preset = 'islands#oliveStretchyIcon'; // По умолчанию
@@ -206,9 +195,6 @@ class ConcertApp {
             this.map.geoObjects.add(placemark);
             this.mapPlacemarks.push(placemark);
         });
-        
-        console.log(`Created ${this.mapPlacemarks.length} markers`);
-        console.log('=== END MAP UPDATE ===');
     }
     
     createHintContent(concerts) {
@@ -229,27 +215,15 @@ class ConcertApp {
                 // Формат: "58.015634, 56.233587"
                 const coordStr = place.coordinates.toString();
                 
-                console.log(`=== PARSING COORDINATES FOR ${placeName} ===`);
-                console.log(`Original coordinate string: "${coordStr}"`);
-                
-                // Используем тот же алгоритм что и на основном сайте:
-                // lat = coord|slice:":11" (first 11 characters)
-                // lng = coord|slice:"12:" (from 12th character onwards)
                 const lat = parseFloat(coordStr.slice(0, 11));
                 const lng = parseFloat(coordStr.slice(12));
                 
-                console.log(`Lat slice (0:11): "${coordStr.slice(0, 11)}" -> ${lat}`);
-                console.log(`Lng slice (12:): "${coordStr.slice(12)}" -> ${lng}`);
-                console.log(`=== END PARSING ===`);
-                
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    console.log(`Using API coordinates for ${placeName}: [${lat}, ${lng}] from "${place.coordinates}"`);
                     return [lat, lng];
                 } else {
                     // Fallback: стандартный парсинг через запятую
                     const coords = place.coordinates.split(',').map(c => parseFloat(c.trim()));
                     if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                        console.log(`Using fallback coordinates for ${placeName}:`, coords);
                         return coords;
                     }
                 }
@@ -311,7 +285,6 @@ class ConcertApp {
         // Ищем точное совпадение
         for (const [key, coords] of Object.entries(knownPlaces)) {
             if (placeNameLower === key.toLowerCase()) {
-                console.log(`Using known coordinates for ${placeName}:`, coords);
                 return coords;
             }
         }
@@ -319,7 +292,6 @@ class ConcertApp {
         // Ищем по ключевым словам
         for (const [key, coords] of Object.entries(knownPlaces)) {
             if (placeNameLower.includes(key.toLowerCase()) || key.toLowerCase().includes(placeNameLower)) {
-                console.log(`Using keyword match coordinates for ${placeName}:`, coords);
                 return coords;
             }
         }
@@ -337,7 +309,6 @@ class ConcertApp {
         const randomLat = baseLat + ((hash % 100) / 10000) * (hash % 2 === 0 ? 1 : -1);
         const randomLng = baseLng + (((hash >> 8) % 100) / 5000) * ((hash >> 4) % 2 === 0 ? 1 : -1);
         
-        console.log(`Using fallback coordinates for ${placeName}:`, [randomLat, randomLng]);
         return [randomLat, randomLng];
     }
     

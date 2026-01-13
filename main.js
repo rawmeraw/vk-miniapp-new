@@ -361,9 +361,9 @@ class ConcertApp {
                         <img src="${imageUrl}" alt="${concert.title}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #f1f3f4; flex-shrink: 0;" 
                              onerror="this.src='zhivoe_logo.jpg'">
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; margin-bottom: 4px; line-height: 1.3; font-family: 'Jost', sans-serif;">${concert.title}</div>
-                            <div style="font-size: 12px; color: #5f6368; margin-bottom: 4px; font-family: 'Jost Light', sans-serif;">${placeName}</div>
-                            <div style="font-size: 12px; color: #ff6b35; font-weight: 600; font-family: 'Jost', sans-serif;">${price}</div>
+                            <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; margin-bottom: 4px; line-height: 1.3; font-family: 'Inter', sans-serif;">${concert.title}</div>
+                            <div style="font-size: 12px; color: #5f6368; margin-bottom: 4px; font-family: 'Inter', sans-serif;">${placeName}</div>
+                            <div style="font-size: 12px; color: #ff6b35; font-weight: 600; font-family: 'Inter', sans-serif;">${price}</div>
                         </div>
                     </a>
                     ${concert.place?.map ? `
@@ -794,11 +794,7 @@ class ConcertApp {
                 <a href="${link}" target="_blank" style="text-decoration: none; color: inherit;">
                     <div class="concert-header">
                         <img src="${imageUrl}" alt="${title}" class="concert-image" 
-                             onerror="console.log('Image failed to load for ${title}:', this.src); 
-                                      if (!this.src.includes('zhivoe_logo.jpg')) { 
-                                          console.log('Retrying with fallback logo'); 
-                                          this.src='zhivoe_logo.jpg'; 
-                                      }"
+                             onerror="if (!this.src.includes('zhivoe_logo.jpg')) { this.src='zhivoe_logo.jpg'; }"
                              onload="console.log('Image loaded successfully for ${title}:', this.src)">
                         <div class="concert-info">
                             <div class="concert-title-container">

@@ -63,7 +63,7 @@
     <!-- Подключение шрифтов -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <!-- Предзагрузка Font Awesome -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -71,17 +71,14 @@
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
     
     <style>
-        @font-face {
-            font-family: 'Jost';
-            src: url('https://permlive.ru/static/fonts/jost.ttf') format('truetype');
-            font-weight: 400;
-            font-display: swap;
+        /* Используем Inter вместо Jost */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        @font-face {
-            font-family: 'Jost Light';
-            src: url('https://permlive.ru/static/fonts/Jost-Light.ttf') format('truetype');
-            font-weight: 200;
-            font-display: swap;
+        
+        .logo h1 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
         }
         
         /* Иконка поиска - цвет как у placeholder */

@@ -132,21 +132,20 @@ class ConcertApp {
         // Получаем сегодняшнюю дату
         const today = new Date().toISOString().split('T')[0];
         
-        // Фильтруем только сегодняшние концерты
-        const todayConcerts = this.filteredConcerts.filter(concert => concert.date === today);
+        // Фильтруем концерты (показываем все, а не только сегодняшние)
+        const mapConcerts = this.filteredConcerts.slice(0, 10); // Показываем первые 10 концертов
         
         console.log(`=== MAP UPDATE ===`);
-        console.log('Today date:', today);
         console.log('Total filtered concerts:', this.filteredConcerts.length);
-        console.log('Today concerts:', todayConcerts.length);
+        console.log('Map concerts:', mapConcerts.length);
         
-        if (todayConcerts.length === 0) {
-            console.log('No concerts today for map');
+        if (mapConcerts.length === 0) {
+            console.log('No concerts for map');
             return;
         }
         
         // Создаем отдельную метку для каждого концерта
-        todayConcerts.forEach((concert, index) => {
+        mapConcerts.forEach((concert, index) => {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
             const coords = this.getPlaceCoordinates(placeName, concert.place);
             

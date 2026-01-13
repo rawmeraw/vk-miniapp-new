@@ -104,7 +104,7 @@
         /* Белые плоские иконки */
         .fas, .fa {
             color: white !important;
-            font-weight: 400 !important;
+            font-weight: 400 !important; /* Плоские иконки */
         }
         
         /* Базовые иконки как fallback */
@@ -117,20 +117,38 @@
         .fa-star::before { content: "⭐"; }
         .fa-ticket-alt::before { content: "🎫"; }
         .fa-crosshairs::before { content: "⊕"; }
+        .fa-route::before { content: "🛣"; }
         
         /* Специальные цвета для некоторых иконок */
         .search-icon, .clear-btn i {
             color: #5f6368 !important;
+            font-weight: 400 !important;
         }
         
         .concert-datetime i, .concert-venue i {
-            color: #5f6368 !important;
+            color: #1d1d1f !important; /* Цвет как у названия концерта */
             font-weight: 400 !important; /* Плоские иконки */
         }
         
         .buy-ticket-btn i {
             color: white !important;
             font-weight: 400 !important; /* Плоская иконка билета */
+        }
+        
+        .rating-badge-inline i {
+            color: #ffd700 !important; /* Золотая звездочка */
+            font-weight: 400 !important;
+        }
+        
+        /* Неактивные кнопки списка/карты с цветом текста */
+        .view-btn:not(.active) i {
+            color: #5f6368 !important; /* Цвет текста неактивной кнопки */
+            font-weight: 400 !important;
+        }
+        
+        .view-btn.active i {
+            color: white !important; /* Белые иконки только для активной кнопки */
+            font-weight: 400 !important;
         }
         
         .rating-badge i {

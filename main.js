@@ -161,12 +161,42 @@ class ConcertApp {
             
             console.log(`Creating marker ${index + 1} for "${concert.title}" at ${placeName}:`, adjustedCoords);
             
+            // Определяем цвет маркера на основе тегов (как на основном сайте)
+            let preset = 'islands#oliveStretchyIcon'; // По умолчанию
+            if (concert.tags && concert.tags.length > 0) {
+                const firstTag = concert.tags[0];
+                const tagName = firstTag.name || firstTag;
+                
+                // Определяем тип тега для цвета маркера
+                if (concert.tag_categories && concert.tag_categories.length > 0) {
+                    const category = concert.tag_categories[0].toLowerCase();
+                    if (category === 'live') {
+                        preset = 'islands#redStretchyIcon';
+                    } else if (category === 'pop') {
+                        preset = 'islands#lightblueStretchyIcon';
+                    } else {
+                        preset = 'islands#oliveStretchyIcon';
+                    }
+                } else {
+                    // Fallback определение по названию тега
+                    const tagLower = tagName.toLowerCase();
+                    if (tagLower.includes('live') || tagLower.includes('рок') || tagLower.includes('метал')) {
+                        preset = 'islands#redStretchyIcon';
+                    } else if (tagLower.includes('pop') || tagLower.includes('поп') || tagLower.includes('электрон')) {
+                        preset = 'islands#lightblueStretchyIcon';
+                    }
+                }
+            }
+            
+            const time = (concert.time || '').slice(0, 5);
+            const iconContent = `${time} ${concert.title}`;
+            
             const placemark = new ymaps.Placemark(adjustedCoords, {
                 balloonContent: this.createSingleConcertBalloon(concert),
-                hintContent: this.createSingleConcertHint(concert)
+                hintContent: this.createSingleConcertHint(concert),
+                iconContent: iconContent
             }, {
-                preset: 'islands#orangeDotIcon',
-                iconColor: '#ff6b35'
+                preset: preset
             });
             
             this.map.geoObjects.add(placemark);
@@ -191,14 +221,27 @@ class ConcertApp {
         // Если у места есть координаты из API, используем их
         if (place && place.coordinates) {
             try {
-                // Координаты могут быть в формате "lat,lng" или "lat, lng"
-                const coords = place.coordinates.split(',').map(c => parseFloat(c.trim()));
-                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                    console.log(`Using API coordinates for ${placeName}:`, coords);
-                    return coords;
+                // Парсим координаты как на основном сайте
+                // Формат: "lat,lng" или "lat, lng"
+                const coordStr = place.coordinates.toString().replace(/\s/g, '');
+                
+                // Берем первые 9 символов для широты и следующие 9 для долготы
+                const lat = parseFloat(coordStr.slice(0, 9));
+                const lng = parseFloat(coordStr.slice(10, 19));
+                
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    console.log(`Using API coordinates for ${placeName}: [${lat}, ${lng}] from "${place.coordinates}"`);
+                    return [lat, lng];
+                } else {
+                    // Fallback: стандартный парсинг через запятую
+                    const coords = place.coordinates.split(',').map(c => parseFloat(c.trim()));
+                    if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                        console.log(`Using fallback coordinates for ${placeName}:`, coords);
+                        return coords;
+                    }
                 }
             } catch (e) {
-                console.warn(`Failed to parse coordinates for ${placeName}:`, place.coordinates);
+                console.warn(`Failed to parse coordinates for ${placeName}:`, place.coordinates, e);
             }
         }
         
@@ -223,6 +266,12 @@ class ConcertApp {
             'Дом культуры железнодорожников': [58.0080, 56.2470],
             'ДК железнодорожников': [58.0080, 56.2470],
             'Дом офицеров': [58.0090, 56.2480],
+            'Distortion 66': [58.0125, 56.2515],
+            'Distortion 66 Бар': [58.0125, 56.2515],
+            'Munchen Pub': [58.0135, 56.2525],
+            'ПДНТ «Губерния»': [58.0140, 56.2540],
+            'ДК Солдатова': [58.0145, 56.2545],
+            'Бар 13/69': [58.0150, 56.2550],
             
             // Органный зал
             'Органный зал': [58.0115, 56.2520],
@@ -337,7 +386,7 @@ class ConcertApp {
                     ${concert.place?.map ? `
                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8eaed;">
                             <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Jost', sans-serif; font-weight: 500;">
-                                <span style="font-size: 10px;">🗺️</span> Как проехать
+                                <i class="fas fa-route" style="font-size: 10px; font-weight: 400;"></i> Как проехать
                             </a>
                         </div>
                     ` : ''}

@@ -233,19 +233,13 @@ class ConcertApp {
                 console.log(`Original coordinate string: "${coordStr}"`);
                 
                 // Используем тот же алгоритм что и на основном сайте:
-                // lat = coord|cut:" "|cut:","|slice:":9"
-                // lng = coord|cut:" "|slice:"10:19"
-                const cleanCoordForLat = coordStr.replace(/\s/g, '').replace(/,/g, '');
-                const cleanCoordForLng = coordStr.replace(/\s/g, '');
+                // lat = coord|slice:":11" (first 11 characters)
+                // lng = coord|slice:"12:" (from 12th character onwards)
+                const lat = parseFloat(coordStr.slice(0, 11));
+                const lng = parseFloat(coordStr.slice(12));
                 
-                console.log(`Clean coord for lat (no spaces, no commas): "${cleanCoordForLat}"`);
-                console.log(`Clean coord for lng (no spaces): "${cleanCoordForLng}"`);
-                
-                const lat = parseFloat(cleanCoordForLat.slice(0, 9));
-                const lng = parseFloat(cleanCoordForLng.slice(10, 19));
-                
-                console.log(`Lat slice (0:9): "${cleanCoordForLat.slice(0, 9)}" -> ${lat}`);
-                console.log(`Lng slice (10:19): "${cleanCoordForLng.slice(10, 19)}" -> ${lng}`);
+                console.log(`Lat slice (0:11): "${coordStr.slice(0, 11)}" -> ${lat}`);
+                console.log(`Lng slice (12:): "${coordStr.slice(12)}" -> ${lng}`);
                 console.log(`=== END PARSING ===`);
                 
                 if (!isNaN(lat) && !isNaN(lng)) {

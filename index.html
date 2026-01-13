@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Живое! Афиша концертов Перми</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Заголовок -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <img src="zhivoe_logo.jpg" alt="Живое!" class="logo-img">
+                    <h1>Живое!</h1>
+                </div>
+                <div class="header-subtitle">Афиша концертов Перми</div>
+            </div>
+        </header>
+
+        <!-- Поиск -->
+        <div class="search-container">
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Поиск концертов..." class="search-input">
+                <button id="clear-search" class="clear-btn" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Переключатель вида -->
+        <div class="view-switcher">
+            <button class="view-btn active" data-view="list">
+                <i class="fas fa-list"></i>
+                Список
+            </button>
+            <button class="view-btn" data-view="calendar">
+                <i class="fas fa-calendar"></i>
+                Календарь
+            </button>
+            <button class="view-btn" data-view="map">
+                <i class="fas fa-map"></i>
+                Карта
+            </button>
+        </div>
+
+        <!-- Календарь -->
+        <div class="calendar-container" id="calendar-view" style="display: none;">
+            <div class="calendar-header">
+                <button class="calendar-nav" id="prev-month">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="calendar-title" id="calendar-title">Январь 2025</div>
+                <button class="calendar-nav" id="next-month">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="calendar-dates" id="calendar-dates">
+                <!-- Даты будут добавлены через JS -->
+            </div>
+        </div>
+
+        <!-- Карта -->
+        <div class="map-container" id="map-view" style="display: none;">
+            <div id="map" class="map"></div>
+            <div class="map-controls">
+                <button class="map-control-btn" id="map-center">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <button class="map-control-btn" id="map-list-toggle">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Список концертов -->
+        <div class="concerts-section">
+            <div class="section-header">
+                <h2 id="concerts-title">Все концерты</h2>
+                <div class="concerts-count" id="concerts-count"></div>
+            </div>
+            <div id="concert-list" class="concert-list">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Загрузка концертов...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yandex Maps API -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=YOUR_API_KEY&lang=ru_RU" type="text/javascript"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- VK Bridge -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <script>
+      if (window.vkBridge) {
+        window.vkBridge.send('VKWebAppInit');
+      }
+    </script>
+    
+    <script src="main.js"></script>
+</body>
+</html>

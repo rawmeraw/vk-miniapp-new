@@ -2,7 +2,7 @@
 
 class ConcertApp {
     constructor() {
-        this.API_URL = 'https://permlive.ru/api/concerts';
+        this.API_URL = 'https://permlive.ru/api/concerts/';
         this.concerts = [];
         this.filteredConcerts = [];
         this.selectedDate = null;
@@ -62,17 +62,22 @@ class ConcertApp {
         document.getElementById('map-view').style.display = 'none';
         document.getElementById('concert-list').style.display = 'none';
         
+        // Управляем видимостью заголовка секции
+        const sectionHeader = document.querySelector('.section-header');
+        
         this.currentView = view;
         
         // Показываем нужный вид
         switch (view) {
             case 'map':
                 document.getElementById('map-view').style.display = 'block';
+                if (sectionHeader) sectionHeader.style.display = 'none'; // Скрываем заголовок на карте
                 this.initMap();
                 break;
             case 'list':
             default:
                 document.getElementById('concert-list').style.display = 'block';
+                if (sectionHeader) sectionHeader.style.display = 'flex'; // Показываем заголовок в списке
                 this.renderConcerts();
                 break;
         }
@@ -282,9 +287,9 @@ class ConcertApp {
     createSingleConcertBalloon(concert) {
         // Используем ту же логику выбора изображения
         const imageFields = [
+            concert.image,
             concert.main_image,
             concert.small_pic, 
-            concert.image,
             concert.poster,
             concert.photo,
             concert.avatar,
@@ -457,11 +462,12 @@ class ConcertApp {
                     console.log('Tags:', data[0].tags);
                     console.log('Tag categories:', data[0].tag_categories);
                     console.log('Images:', {
+                        image: data[0].image,
                         main_image: data[0].main_image,
-                        small_pic: data[0].small_pic,
-                        image: data[0].image
+                        small_pic: data[0].small_pic
                     });
                     console.log('Place:', data[0].place);
+                    console.log('Is published:', data[0].is_published);
                     console.log('=== END SAMPLE ===');
                 }
                 
@@ -640,6 +646,28 @@ class ConcertApp {
             return false;
         }
         
+        // Проверяем что это похоже на URL изображения
+        if (!url.startsWith('http')) {
+            return false;
+        }
+        
+        // Дополнительная проверка на валидные домены изображений
+        const validDomains = [
+            'permlive.ru',
+            'vkuserphoto.ru', 
+            'sun9-',  // VK CDN
+            'pp.userapi.com',
+            'pp.vk.me',
+            'cs',  // VK CDN
+            'imgur.com',
+            'i.imgur.com'
+        ];
+        
+        const hasValidDomain = validDomains.some(domain => url.includes(domain));
+        if (!hasValidDomain) {
+            console.log(`  -> Unknown domain for image: ${url}`);
+        }
+        
         return true;
     }
     
@@ -651,9 +679,9 @@ class ConcertApp {
         
         // Изображение - пробуем разные поля в порядке приоритета
         const imageFields = [
-            concert.main_image,      // Главное изображение из ConcertImage
+            concert.image,           // Основное поле изображения в API
+            concert.main_image,      // На случай если добавят позже
             concert.small_pic,       // Уменьшенная версия
-            concert.image,           // Старое поле для обратной совместимости
             concert.poster,          // Постер
             concert.photo,           // Фото
             concert.avatar,          // Аватар
@@ -671,9 +699,9 @@ class ConcertApp {
         
         console.log(`=== IMAGE DEBUG for ${title} ===`);
         console.log('Available image fields:', {
+            image: concert.image,
             main_image: concert.main_image,
             small_pic: concert.small_pic,
-            image: concert.image,
             poster: concert.poster,
             photo: concert.photo,
             avatar: concert.avatar,

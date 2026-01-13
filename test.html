@@ -33,7 +33,7 @@
 
     <script>
         async function testAPI() {
-            const apiUrl = 'https://permlive.ru/api/concerts';
+            const apiUrl = 'https://permlive.ru/api/concerts/';  // Исправленный URL
             const resultDiv = document.getElementById('api-test');
             
             try {
@@ -54,9 +54,9 @@
                     // Test image fields
                     const firstConcert = data[0];
                     console.log('Image fields in first concert:', {
+                        image: firstConcert.image,
                         main_image: firstConcert.main_image,
                         small_pic: firstConcert.small_pic,
-                        image: firstConcert.image,
                         poster: firstConcert.poster,
                         photo: firstConcert.photo
                     });
@@ -68,7 +68,17 @@
                     console.log('Tags:', firstConcert.tags);
                     console.log('Tag categories:', firstConcert.tag_categories);
                     
-                    resultDiv.innerHTML = `<div class="success">✓ API working! Loaded ${data.length} concerts</div>`;
+                    // Count today's concerts
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayConcerts = data.filter(c => c.date === today);
+                    console.log(`Today's concerts (${today}):`, todayConcerts.length);
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">✓ API working! Loaded ${data.length} concerts</div>
+                        <div class="info">Today's concerts: ${todayConcerts.length}</div>
+                        <div class="info">Sample concert: ${firstConcert.title}</div>
+                        <div class="info">Has image: ${firstConcert.image ? 'Yes' : 'No'}</div>
+                    `;
                 } else {
                     resultDiv.innerHTML = `<div class="error">✗ API returned empty data</div>`;
                 }

@@ -1,4 +1,10 @@
 <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="20" cy="20" r="18" fill="white" stroke="rgba(255, 255, 255, 0.3)" stroke-width="2"/>
-  <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#ff6b35" text-anchor="middle">Ж</text>
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f7931e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="20" cy="20" r="18" fill="url(#logoGradient)" stroke="white" stroke-width="2"/>
+  <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">Ж</text>
 </svg>

@@ -152,14 +152,31 @@ class ConcertApp {
         
         // Создаем метки для каждого места
         Object.entries(placeGroups).forEach(([placeName, concerts]) => {
-            // Используем координаты первого концерта или примерные координаты Перми
-            const coords = this.getPlaceCoordinates(placeName);
+            // Используем координаты из API или fallback
+            const firstConcert = concerts[0];
+            const place = firstConcert.place;
+            const coords = this.getPlaceCoordinates(placeName, place);
+            
+            // Создаем кастомный маркер с временем и названием
+            const concert = concerts[0]; // Берем первый концерт для маркера
+            const time = (concert.time || '').slice(0, 5);
             
             const placemark = new ymaps.Placemark(coords, {
-                balloonContent: this.createBalloonContent(placeName, concerts),
+                balloonContent: this.createBalloonContent(placeName, concerts, place),
                 hintContent: this.createHintContent(concerts)
             }, {
-                preset: 'islands#redDotIcon',
+                // Кастомная иконка с временем и названием
+                iconLayout: 'default#imageWithContent',
+                iconImageHref: 'data:image/svg+xml;base64,' + btoa(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" viewBox="0 0 120 60">
+                        <rect x="2" y="2" width="116" height="56" rx="8" fill="white" stroke="#ff6b35" stroke-width="2"/>
+                        <text x="60" y="20" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d1d1f">${time || 'Время'}</text>
+                        <text x="60" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#5f6368">${concert.title.length > 15 ? concert.title.substring(0, 15) + '...' : concert.title}</text>
+                        <text x="60" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#ff6b35">${placeName.length > 18 ? placeName.substring(0, 18) + '...' : placeName}</text>
+                    </svg>
+                `),
+                iconImageSize: [120, 60],
+                iconImageOffset: [-60, -60],
                 balloonPanelMaxMapArea: 0
             });
             
@@ -178,8 +195,22 @@ class ConcertApp {
         }
     }
     
-    getPlaceCoordinates(placeName) {
-        // Реальные координаты популярных площадок Перми
+    getPlaceCoordinates(placeName, place) {
+        // Если у места есть координаты из API, используем их
+        if (place && place.coordinates) {
+            try {
+                // Координаты могут быть в формате "lat,lng" или "lat, lng"
+                const coords = place.coordinates.split(',').map(c => parseFloat(c.trim()));
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    console.log(`Using API coordinates for ${placeName}:`, coords);
+                    return coords;
+                }
+            } catch (e) {
+                console.warn(`Failed to parse coordinates for ${placeName}:`, place.coordinates);
+            }
+        }
+        
+        // Fallback: реальные координаты популярных площадок Перми
         const knownPlaces = {
             // Основные концертные площадки
             'БКЗ': [58.0105, 56.2502],
@@ -226,6 +257,7 @@ class ConcertApp {
         // Ищем точное совпадение
         for (const [key, coords] of Object.entries(knownPlaces)) {
             if (placeNameLower === key.toLowerCase()) {
+                console.log(`Using known coordinates for ${placeName}:`, coords);
                 return coords;
             }
         }
@@ -233,11 +265,12 @@ class ConcertApp {
         // Ищем по ключевым словам
         for (const [key, coords] of Object.entries(knownPlaces)) {
             if (placeNameLower.includes(key.toLowerCase()) || key.toLowerCase().includes(placeNameLower)) {
+                console.log(`Using keyword match coordinates for ${placeName}:`, coords);
                 return coords;
             }
         }
         
-        // Если не найдено, возвращаем координаты в центре Перми с небольшим смещением
+        // Если не найдено, возвращаем координаты в центре Перми с детерминированным смещением
         const baseLat = 58.0105;
         const baseLng = 56.2502;
         
@@ -250,11 +283,12 @@ class ConcertApp {
         const randomLat = baseLat + ((hash % 100) / 10000) * (hash % 2 === 0 ? 1 : -1);
         const randomLng = baseLng + (((hash >> 8) % 100) / 5000) * ((hash >> 4) % 2 === 0 ? 1 : -1);
         
+        console.log(`Using fallback coordinates for ${placeName}:`, [randomLat, randomLng]);
         return [randomLat, randomLng];
     }
     
-    createBalloonContent(placeName, concerts) {
-        const concertsHtml = concerts.slice(0, 5).map(concert => {
+    createBalloonContent(placeName, concerts, place) {
+        const concertsHtml = concerts.slice(0, 3).map(concert => {
             let imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
             
             // Проверяем на заглушки VK
@@ -268,33 +302,49 @@ class ConcertApp {
             
             const link = concert.slug ? `https://permlive.ru/event/${concert.slug}` : '#';
             const time = (concert.time || '').slice(0, 5);
+            const price = concert.price > 0 ? `${concert.price}₽` : 'Бесплатно';
             
             return `
-                <a href="${link}" class="map-balloon-concert" target="_blank">
-                    <img src="${imageUrl}" alt="${concert.title}" class="map-balloon-concert-image" 
+                <a href="${link}" class="map-balloon-concert" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 6px; transition: background 0.2s ease;">
+                    <img src="${imageUrl}" alt="${concert.title}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #f1f3f4; flex-shrink: 0;" 
                          onerror="this.src='zhivoe_logo.jpg'">
-                    <div class="map-balloon-concert-info">
-                        <div class="map-balloon-concert-title">${concert.title}</div>
-                        <div class="map-balloon-concert-date">${time ? `${time}` : 'Время уточняется'}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 2px; line-height: 1.2; font-family: 'Jost', sans-serif; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${concert.title}</div>
+                        <div style="font-size: 11px; color: #5f6368; font-family: 'Jost Light', sans-serif;">${time ? `${time}` : 'Время уточняется'} • ${price}</div>
                     </div>
                 </a>
             `;
         }).join('');
         
-        const moreText = concerts.length > 5 ? `<div style="text-align: center; padding: 8px; color: #5f6368; font-size: 12px; font-family: 'Jost Light', sans-serif;">и ещё ${concerts.length - 5} концерт${concerts.length - 5 === 1 ? '' : concerts.length - 5 < 5 ? 'а' : 'ов'}</div>` : '';
+        const moreText = concerts.length > 3 ? `<div style="text-align: center; padding: 8px; color: #5f6368; font-size: 12px; font-family: 'Jost Light', sans-serif;">и ещё ${concerts.length - 3} концерт${concerts.length - 3 === 1 ? '' : concerts.length - 3 < 5 ? 'а' : 'ов'}</div>` : '';
+        
+        // Информация о месте
+        const placeInfo = place ? `
+            <div style="padding: 8px 12px; border-top: 1px solid #e8eaed; background: #f8f9fa;">
+                ${place.map ? `
+                    <a href="${place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Jost', sans-serif; font-weight: 500;">
+                        <span style="font-size: 10px;">🗺️</span> Как проехать
+                    </a>
+                ` : ''}
+                <div style="font-size: 11px; color: #5f6368; margin-top: 4px; font-family: 'Jost Light', sans-serif;">
+                    📍 ${placeName}
+                </div>
+            </div>
+        ` : '';
         
         return `
-            <div class="map-balloon">
-                <div class="map-balloon-header">
-                    <div class="map-balloon-title">${placeName}</div>
-                    <div class="map-balloon-place">Сегодня: ${concerts.length} концерт${concerts.length === 1 ? '' : concerts.length < 5 ? 'а' : 'ов'}</div>
+            <div style="max-width: 280px; font-family: 'Jost', sans-serif;">
+                <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 12px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; font-family: 'Jost', sans-serif;">${placeName}</div>
+                    <div style="font-size: 12px; opacity: 0.9; font-family: 'Jost Light', sans-serif;">Сегодня: ${concerts.length} концерт${concerts.length === 1 ? '' : concerts.length < 5 ? 'а' : 'ов'}</div>
                 </div>
-                <div class="map-balloon-body">
-                    <div class="map-balloon-concerts">
+                <div style="background: white; padding: 12px;">
+                    <div>
                         ${concertsHtml}
                         ${moreText}
                     </div>
                 </div>
+                ${placeInfo}
             </div>
         `;
     }
@@ -302,30 +352,72 @@ class ConcertApp {
     async loadConcerts() {
         const listElement = document.getElementById('concert-list');
         
-        try {
-            const response = await fetch(this.API_URL);
-            if (!response.ok) throw new Error('Ошибка загрузки данных');
-            
-            let data = await response.json();
-            if (!Array.isArray(data) || !data.length) {
-                this.showEmptyState('Нет концертов', 'Концерты не найдены');
-                return;
+        // Функция для попытки загрузки
+        const attemptLoad = async (attempt = 1) => {
+            try {
+                console.log(`Loading concerts (attempt ${attempt}) from:`, this.API_URL);
+                const response = await fetch(this.API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                let data = await response.json();
+                console.log('Raw API data received:', !!data);
+                console.log('Number of concerts:', data?.length || 0);
+                
+                if (!Array.isArray(data) || !data.length) {
+                    if (attempt < 3) {
+                        console.log('No data received, retrying...');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return attemptLoad(attempt + 1);
+                    }
+                    this.showEmptyState('Нет концертов', 'Концерты не найдены');
+                    return;
+                }
+                
+                // Отладка первого концерта
+                if (data[0]) {
+                    console.log('First concert sample:', {
+                        title: data[0].title,
+                        main_image: data[0].main_image,
+                        small_pic: data[0].small_pic,
+                        image: data[0].image,
+                        place: data[0].place
+                    });
+                }
+                
+                // Фильтруем будущие концерты
+                data = this.filterFutureConcerts(data);
+                console.log('Future concerts:', data.length);
+                
+                // Сортируем концерты
+                this.concerts = this.sortConcerts(data);
+                this.filteredConcerts = [...this.concerts];
+                
+                console.log('Final concerts count:', this.concerts.length);
+                
+                this.renderConcerts();
+                
+            } catch (error) {
+                console.error(`Load attempt ${attempt} failed:`, error);
+                if (attempt < 3) {
+                    console.log('Retrying in 2 seconds...');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    return attemptLoad(attempt + 1);
+                }
+                this.showError('Ошибка загрузки', `Не удалось загрузить список концертов после ${attempt} попыток: ${error.message}`);
             }
-            
-            // Фильтруем будущие концерты
-            data = this.filterFutureConcerts(data);
-            
-            // Сортируем концерты
-            this.concerts = this.sortConcerts(data);
-            this.filteredConcerts = [...this.concerts];
-            
-            this.renderConcerts();
-            this.renderCalendar();
-            
-        } catch (error) {
-            console.error('Ошибка загрузки:', error);
-            this.showError('Ошибка загрузки', 'Не удалось загрузить список концертов');
-        }
+        };
+        
+        await attemptLoad();
     }
     
     filterFutureConcerts(concerts) {
@@ -429,15 +521,24 @@ class ConcertApp {
         const place = (concert.place?.name || concert.place || '');
         
         // Изображение - используем main_image или small_pic
-        let imageUrl = concert.main_image || concert.small_pic || 'zhivoe_logo.jpg';
+        let imageUrl = concert.main_image || concert.small_pic || concert.image || 'zhivoe_logo.jpg';
         
-        // Проверяем на заглушки VK
+        console.log(`Concert: ${title}`);
+        console.log('  main_image:', concert.main_image);
+        console.log('  small_pic:', concert.small_pic);
+        console.log('  image:', concert.image);
+        console.log('  selected imageUrl:', imageUrl);
+        
+        // Проверяем на заглушки VK и пустые значения
         if (!imageUrl || 
             imageUrl.includes('camera_200.png') || 
             imageUrl === 'https://vk.ru/images/camera_200.png' ||
             imageUrl.includes('vk.ru/images/') ||
-            imageUrl === '') {
+            imageUrl === '' ||
+            imageUrl === null ||
+            imageUrl === undefined) {
             imageUrl = 'zhivoe_logo.jpg';
+            console.log('  -> Using fallback logo');
         }
         
         // Если это изображение с permlive.ru, добавляем параметры размера
@@ -446,9 +547,8 @@ class ConcertApp {
             imageUrl = imageUrl.split('?')[0];
             // Добавляем новые параметры для получения изображения 300px
             imageUrl += '?w=300&h=300&fit=crop&q=80';
+            console.log('  -> Optimized URL:', imageUrl);
         }
-        
-        console.log('Image URL for', title, ':', imageUrl); // Для отладки
         
         // Дата и время
         const dateLabel = this.formatDate(date, time);
@@ -476,7 +576,7 @@ class ConcertApp {
                 <a href="${link}" target="_blank" style="text-decoration: none; color: inherit;">
                     <div class="concert-header">
                         <img src="${imageUrl}" alt="${title}" class="concert-image" 
-                             onerror="console.log('Image failed:', this.src); this.src='zhivoe_logo.jpg'">
+                             onerror="console.log('Image failed to load:', this.src); this.src='zhivoe_logo.jpg'">
                         <div class="concert-info">
                             <div class="concert-title">${title}</div>
                             <div class="concert-meta">

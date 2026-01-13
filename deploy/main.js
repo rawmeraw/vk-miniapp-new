@@ -359,7 +359,7 @@ class ConcertApp {
         }
         
         if (!imageUrl) {
-            imageUrl = 'zhivoe_logo.svg';
+            imageUrl = 'zhivoe_logo.jpg';
         }
         
         const link = concert.slug ? `https://permlive.ru/event/${concert.slug}` : '#';
@@ -376,7 +376,7 @@ class ConcertApp {
                 <div style="background: white; padding: 12px;">
                     <a href="${link}" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
                         <img src="${imageUrl}" alt="${concert.title}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #f1f3f4; flex-shrink: 0;" 
-                             onerror="this.src='zhivoe_logo.svg'">
+                             onerror="this.src='zhivoe_logo.jpg'">
                         <div style="flex: 1; min-width: 0;">
                             <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; margin-bottom: 4px; line-height: 1.3; font-family: 'Jost', sans-serif;">${concert.title}</div>
                             <div style="font-size: 12px; color: #5f6368; margin-bottom: 4px; font-family: 'Jost Light', sans-serif;">📍 ${placeName}</div>
@@ -425,7 +425,7 @@ class ConcertApp {
             return `
                 <a href="${link}" class="map-balloon-concert" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px; padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 6px; transition: background 0.2s ease;">
                     <img src="${imageUrl}" alt="${concert.title}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: #f1f3f4; flex-shrink: 0;" 
-                         onerror="this.src='zhivoe_logo.svg'">
+                         onerror="this.src='zhivoe_logo.jpg'">
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 2px; line-height: 1.2; font-family: 'Jost', sans-serif; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${concert.title}</div>
                         <div style="font-size: 11px; color: #5f6368; font-family: 'Jost Light', sans-serif;">${time ? `${time}` : 'Время уточняется'} • ${price}</div>
@@ -771,11 +771,11 @@ class ConcertApp {
         }
         
         if (!imageUrl) {
-            imageUrl = 'zhivoe_logo.svg';
+            imageUrl = 'zhivoe_logo.jpg';
             console.log('  -> No valid images found, using fallback logo');
         } else {
             // Если это изображение с permlive.ru, добавляем параметры размера
-            if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.svg')) {
+            if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
                 // Убираем старые параметры если есть
                 imageUrl = imageUrl.split('?')[0];
                 // Добавляем новые параметры для получения изображения 300px
@@ -812,9 +812,9 @@ class ConcertApp {
                     <div class="concert-header">
                         <img src="${imageUrl}" alt="${title}" class="concert-image" 
                              onerror="console.log('Image failed to load for ${title}:', this.src); 
-                                      if (!this.src.includes('zhivoe_logo.svg')) { 
+                                      if (!this.src.includes('zhivoe_logo.jpg')) { 
                                           console.log('Retrying with fallback logo'); 
-                                          this.src='zhivoe_logo.svg'; 
+                                          this.src='zhivoe_logo.jpg'; 
                                       }"
                              onload="console.log('Image loaded successfully for ${title}:', this.src)">
                         <div class="concert-info">

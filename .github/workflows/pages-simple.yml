@@ -1,0 +1,40 @@
+name: Simple GitHub Pages Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build site
+        run: |
+          # Создаем минимальную структуру для деплоя
+          mkdir -p _site
+          cp index.html _site/
+          cp main.js _site/
+          cp style.css _site/
+          cp zhivoe_logo.jpg _site/ 2>/dev/null || echo "Logo not found, skipping"
+          echo "Site built successfully"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

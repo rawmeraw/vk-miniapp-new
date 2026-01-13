@@ -135,37 +135,31 @@ class ConcertApp {
         // Фильтруем только сегодняшние концерты
         const todayConcerts = this.filteredConcerts.filter(concert => concert.date === today);
         
+        console.log(`=== MAP UPDATE ===`);
+        console.log('Today date:', today);
+        console.log('Total filtered concerts:', this.filteredConcerts.length);
+        console.log('Today concerts:', todayConcerts.length);
+        
         if (todayConcerts.length === 0) {
-            // Если нет концертов на сегодня, показываем сообщение
+            console.log('No concerts today for map');
             return;
         }
         
-        // Группируем концерты по местам
-        const placeGroups = {};
-        todayConcerts.forEach(concert => {
+        // Создаем отдельную метку для каждого концерта
+        todayConcerts.forEach((concert, index) => {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
-            if (!placeGroups[placeName]) {
-                placeGroups[placeName] = [];
-            }
-            placeGroups[placeName].push(concert);
-        });
-        
-        // Создаем метки для каждого места
-        Object.entries(placeGroups).forEach(([placeName, concerts]) => {
-            // Используем координаты из API или fallback
-            const firstConcert = concerts[0];
-            const place = firstConcert.place;
-            const coords = this.getPlaceCoordinates(placeName, place);
+            const coords = this.getPlaceCoordinates(placeName, concert.place);
             
-            // Создаем стандартный маркер без кастомной SVG
-            const concert = concerts[0]; // Берем первый концерт для маркера
-            const time = (concert.time || '').slice(0, 5);
+            // Добавляем небольшое смещение если концерты в одном месте
+            const offset = index * 0.0001;
+            const adjustedCoords = [coords[0] + offset, coords[1] + offset];
             
-            const placemark = new ymaps.Placemark(coords, {
-                balloonContent: this.createBalloonContent(placeName, concerts, place),
-                hintContent: this.createHintContent(concerts)
+            console.log(`Creating marker ${index + 1} for "${concert.title}" at ${placeName}:`, adjustedCoords);
+            
+            const placemark = new ymaps.Placemark(adjustedCoords, {
+                balloonContent: this.createSingleConcertBalloon(concert),
+                hintContent: this.createSingleConcertHint(concert)
             }, {
-                // Используем стандартную иконку вместо кастомной SVG
                 preset: 'islands#orangeDotIcon',
                 iconColor: '#ff6b35'
             });
@@ -173,6 +167,9 @@ class ConcertApp {
             this.map.geoObjects.add(placemark);
             this.mapPlacemarks.push(placemark);
         });
+        
+        console.log(`Created ${this.mapPlacemarks.length} markers`);
+        console.log('=== END MAP UPDATE ===');
     }
     
     createHintContent(concerts) {
@@ -275,6 +272,73 @@ class ConcertApp {
         
         console.log(`Using fallback coordinates for ${placeName}:`, [randomLat, randomLng]);
         return [randomLat, randomLng];
+    }
+    
+    createSingleConcertHint(concert) {
+        const time = (concert.time || '').slice(0, 5);
+        return `${time} - ${concert.title}`;
+    }
+    
+    createSingleConcertBalloon(concert) {
+        // Используем ту же логику выбора изображения
+        const imageFields = [
+            concert.main_image,
+            concert.small_pic, 
+            concert.image,
+            concert.poster,
+            concert.photo,
+            concert.avatar,
+            concert.thumbnail,
+            concert.cover,
+            ...(Array.isArray(concert.images) ? concert.images.map(img => img.url || img) : []),
+            concert.place?.avatar,
+            concert.place?.image,
+            concert.place?.photo
+        ];
+        
+        let imageUrl = null;
+        for (const field of imageFields) {
+            if (this.isValidImageUrl(field)) {
+                imageUrl = field;
+                break;
+            }
+        }
+        
+        if (!imageUrl) {
+            imageUrl = 'zhivoe_logo.jpg';
+        }
+        
+        const link = concert.slug ? `https://permlive.ru/event/${concert.slug}` : '#';
+        const time = (concert.time || '').slice(0, 5);
+        const price = concert.price > 0 ? `${concert.price}₽` : 'Бесплатно';
+        const placeName = concert.place?.name || concert.place || 'Неизвестное место';
+        
+        return `
+            <div style="max-width: 280px; font-family: 'Jost', sans-serif;">
+                <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); color: white; padding: 12px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; font-family: 'Jost', sans-serif;">${concert.title}</div>
+                    <div style="font-size: 12px; opacity: 0.9; font-family: 'Jost Light', sans-serif;">${time ? `${time}` : 'Время уточняется'} • ${placeName}</div>
+                </div>
+                <div style="background: white; padding: 12px;">
+                    <a href="${link}" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;">
+                        <img src="${imageUrl}" alt="${concert.title}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #f1f3f4; flex-shrink: 0;" 
+                             onerror="this.src='zhivoe_logo.jpg'">
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; margin-bottom: 4px; line-height: 1.3; font-family: 'Jost', sans-serif;">${concert.title}</div>
+                            <div style="font-size: 12px; color: #5f6368; margin-bottom: 4px; font-family: 'Jost Light', sans-serif;">📍 ${placeName}</div>
+                            <div style="font-size: 12px; color: #ff6b35; font-weight: 600; font-family: 'Jost', sans-serif;">${price}</div>
+                        </div>
+                    </a>
+                    ${concert.place?.map ? `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8eaed;">
+                            <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Jost', sans-serif; font-weight: 500;">
+                                <span style="font-size: 10px;">🗺️</span> Как проехать
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
     }
     
     createBalloonContent(placeName, concerts, place) {
@@ -429,25 +493,40 @@ class ConcertApp {
     
     filterFutureConcerts(concerts) {
         const now = new Date();
+        // Устанавливаем время на начало текущего дня для более мягкой фильтрации
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
         console.log('=== FILTERING CONCERTS ===');
         console.log('Total concerts before filtering:', concerts.length);
         console.log('Current time:', now.toISOString());
+        console.log('Today start (for filtering):', todayStart.toISOString());
         
         const filtered = concerts.filter((concert, index) => {
-            if (!concert.date || !concert.time) {
-                console.log(`Concert ${index + 1} (${concert.title}): No date/time - KEEPING`);
-                return true; // Оставляем концерты без даты/времени
+            if (!concert.date) {
+                console.log(`Concert ${index + 1} (${concert.title}): No date - KEEPING`);
+                return true; // Оставляем концерты без даты
             }
             
+            // Парсим дату концерта
             const [year, month, day] = concert.date.split('-').map(Number);
-            const [hour, minute] = (concert.time || '00:00').split(':').map(Number);
-            const concertDate = new Date(year, month - 1, day, hour, minute);
+            const concertDate = new Date(year, month - 1, day);
             
-            const isFuture = concertDate >= now;
+            // Если есть время, добавляем его
+            if (concert.time) {
+                const [hour, minute] = concert.time.split(':').map(Number);
+                concertDate.setHours(hour, minute);
+            } else {
+                // Если времени нет, считаем что концерт в конце дня
+                concertDate.setHours(23, 59);
+            }
+            
+            // Сравниваем с началом сегодняшнего дня, а не с текущим временем
+            const isFuture = concertDate >= todayStart;
+            
             if (!isFuture) {
                 console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - FILTERED OUT (past)`);
             } else {
-                console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - KEEPING (future)`);
+                console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - KEEPING (future/today)`);
             }
             
             return isFuture;
@@ -572,11 +651,20 @@ class ConcertApp {
         
         // Изображение - пробуем разные поля в порядке приоритета
         const imageFields = [
-            concert.main_image,
-            concert.small_pic, 
-            concert.image,
-            concert.poster,
-            concert.photo
+            concert.main_image,      // Главное изображение из ConcertImage
+            concert.small_pic,       // Уменьшенная версия
+            concert.image,           // Старое поле для обратной совместимости
+            concert.poster,          // Постер
+            concert.photo,           // Фото
+            concert.avatar,          // Аватар
+            concert.thumbnail,       // Миниатюра
+            concert.cover,           // Обложка
+            // Если есть массив изображений, берем первое
+            ...(Array.isArray(concert.images) ? concert.images.map(img => img.url || img) : []),
+            // Изображение места как fallback
+            concert.place?.avatar,
+            concert.place?.image,
+            concert.place?.photo
         ];
         
         let imageUrl = null;
@@ -587,7 +675,13 @@ class ConcertApp {
             small_pic: concert.small_pic,
             image: concert.image,
             poster: concert.poster,
-            photo: concert.photo
+            photo: concert.photo,
+            avatar: concert.avatar,
+            thumbnail: concert.thumbnail,
+            cover: concert.cover,
+            images: concert.images,
+            place_avatar: concert.place?.avatar,
+            place_image: concert.place?.image
         });
         
         // Проверяем каждое поле на валидность

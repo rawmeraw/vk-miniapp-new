@@ -158,6 +158,11 @@ body {
 
 .view-btn i {
     font-size: 12px;
+    color: inherit; /* Наследуем цвет от родителя */
+}
+
+.view-btn.active i {
+    color: white !important; /* Белые иконки только для активной кнопки */
 }
 
 /* Карта */
@@ -636,23 +641,23 @@ body {
 }
 
 .rating-badge-inline {
-    background: #f1f3f4;
-    color: #ff6b35;
-    padding: 2px 6px;
-    border-radius: 8px;
+    background: #f8f9fa;
+    color: #1d1d1f;
+    padding: 3px 8px;
+    border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
     font-family: 'Jost', sans-serif;
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     flex-shrink: 0;
     margin-top: 1px; /* Небольшое смещение для выравнивания */
 }
 
 .rating-badge-inline i {
     font-size: 10px;
-    color: #ff6b35 !important;
+    color: #ffc107 !important; /* Желтая звездочка */
 }
 
 .concert-meta {
@@ -923,11 +928,11 @@ body {
 
 /* Состояния карточек */
 .concert-card.new {
-    border-left: 4px solid #4285f4;
+    border-left: 4px solid #ff6b35;
 }
 
 .concert-card.featured {
-    border-left: 4px solid #34a853;
+    border-left: 4px solid #ff6b35;
 }
 
 .concert-card.cancelled {

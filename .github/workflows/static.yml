@@ -13,9 +13,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v4
-      - uses: actions/upload-pages-artifact@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Create clean build
+        run: |
+          mkdir build
+          cp index.html build/
+          cp style.css build/
+          cp main.js build/
+          cp zhivoe_logo.jpg build/
+          cp .nojekyll build/
+          echo "Build contents:"
+          ls -la build/
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
-      - uses: actions/deploy-pages@v4
+          path: './build'
+          
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

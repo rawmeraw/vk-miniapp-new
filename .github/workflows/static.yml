@@ -32,6 +32,7 @@ jobs:
           cp main.js deploy/
           cp zhivoe_logo.jpg deploy/
           cp .nojekyll deploy/ 2>/dev/null || echo "No .nojekyll file"
+          ls -la deploy/
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -44,4 +45,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        timeout-minutes: 5

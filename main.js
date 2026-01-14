@@ -207,16 +207,15 @@ class ConcertApp {
                 const coordStr = place.coordinates.toString();
                 
                 // Парсим с точностью до 6 знаков после запятой
-                const lat = parseFloat(parseFloat(coordStr.slice(0, 11)).toFixed(6));
-                const lng = parseFloat(parseFloat(coordStr.slice(12)).toFixed(6));
+                const coords = place.coordinates.split(',').map(c => {
+                    // Удаляем все пробелы и парсим как число
+                    const num = parseFloat(c.trim().replace(/\s+/g, ''));
+                    // Форматируем до 6 знаков после запятой, добавляя нули при необходимости
+                    return parseFloat(num.toFixed(6));
+                });
                 
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    return [lat, lng];
-                } else {
-                    const coords = place.coordinates.split(',').map(c => parseFloat(parseFloat(c.trim()).toFixed(6)));
-                    if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-                        return coords;
-                    }
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    return coords;
                 }
             } catch (e) {
                 // Ошибка парсинга координат

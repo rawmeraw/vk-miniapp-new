@@ -143,9 +143,13 @@ class ConcertApp {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
             const coords = this.getPlaceCoordinates(placeName, concert.place);
             
+            console.log(`Creating placemark for ${placeName}:`, coords);
+            
             // Добавляем небольшое смещение если концерты в одном месте
             const offset = index * 0.0001;
             const adjustedCoords = [coords[0] + offset, coords[1] + offset];
+            
+            console.log(`Adjusted coordinates for ${placeName}:`, adjustedCoords);
             
             // Определяем цвет маркера на основе тегов (как на основном сайте)
             let preset = 'islands#oliveStretchyIcon'; // По умолчанию
@@ -205,19 +209,25 @@ class ConcertApp {
         if (place && place.coordinates) {
             try {
                 const coordStr = place.coordinates.toString();
+                console.log('Original coordinates:', coordStr, 'for place:', placeName);
                 
                 // Парсим с точностью до 6 знаков после запятой
                 const coords = place.coordinates.split(',').map(c => {
                     // Удаляем все пробелы и парсим как число
                     const num = parseFloat(c.trim().replace(/\s+/g, ''));
                     // Форматируем до 6 знаков после запятой, добавляя нули при необходимости
-                    return parseFloat(num.toFixed(6));
+                    const formatted = parseFloat(num.toFixed(6));
+                    console.log('Parsed coordinate:', c, '->', formatted);
+                    return formatted;
                 });
+                
+                console.log('Final coordinates array:', coords);
                 
                 if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
                     return coords;
                 }
             } catch (e) {
+                console.error('Error parsing coordinates:', e);
                 // Ошибка парсинга координат
             }
         }

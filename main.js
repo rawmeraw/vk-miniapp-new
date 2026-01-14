@@ -142,6 +142,17 @@ class ConcertApp {
         console.log('Total filtered concerts:', this.filteredConcerts.length);
         console.log('Today concerts:', todayConcerts.length);
         
+        // ОТЛАДКА КООРДИНАТ
+        console.log('=== TODAY CONCERTS COORDINATES ===');
+        todayConcerts.forEach((concert, i) => {
+            const placeName = concert.place?.name || concert.place || 'Неизвестное место';
+            const coords = this.getPlaceCoordinates(placeName, concert.place);
+            console.log(`${i + 1}. "${concert.title}" at "${placeName}"`);
+            console.log(`   Raw coordinates: ${concert.place?.coordinates}`);
+            console.log(`   Parsed: [${coords[0]}, ${coords[1]}]`);
+        });
+        console.log('=== END COORDINATES ===');
+        
         if (todayConcerts.length === 0) {
             console.log('No concerts today for map');
             return;
@@ -367,8 +378,8 @@ class ConcertApp {
                     </a>
                     ${concert.place?.map ? `
                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8eaed;">
-                            <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Jost', sans-serif; font-weight: 500;">
-                                <i class="fas fa-route" style="font-size: 10px; font-weight: 400;"></i> Как проехать
+                            <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 500;">
+                                Маршрут
                             </a>
                         </div>
                     ` : ''}
@@ -797,8 +808,7 @@ class ConcertApp {
                 <a href="${link}" target="_blank" style="text-decoration: none; color: inherit;">
                     <div class="concert-header">
                         <img src="${imageUrl}" alt="${title}" class="concert-image" 
-                             onerror="if (!this.src.includes('zhivoe_logo.jpg')) { this.src='zhivoe_logo.jpg'; }"
-                             onload="console.log('Image loaded successfully for ${title}:', this.src)">
+                             onerror="if (!this.src.includes('zhivoe_logo.jpg')) { this.src='zhivoe_logo.jpg'; }">
                         <div class="concert-info">
                             <div class="concert-title-container">
                                 ${this.formatRatingBadge(concert.rating)}

@@ -134,9 +134,6 @@ class ConcertApp {
         // Получаем сегодняшнюю дату
         const today = new Date().toISOString().split('T')[0];
         
-        // Получаем сегодняшнюю дату
-        const today = new Date().toISOString().split('T')[0];
-        
         // Фильтруем только сегодняшние концерты
         const todayConcerts = this.filteredConcerts.filter(concert => concert.date === today);
         

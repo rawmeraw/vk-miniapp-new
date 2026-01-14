@@ -263,12 +263,13 @@ class ConcertApp {
             'Театр юного зрителя': [58.011000, 56.252000],
             
             // Сегодняшние площадки - РЕАЛЬНЫЕ координаты
+            'ДК Калинина': [58.012200, 56.258200],
+            'Бар 13/69': [58.013441, 56.247966],
             'Distortion 66': [58.012500, 56.251500],
             'Distortion 66 Бар': [58.012500, 56.251500],
             'Munchen Pub': [58.013500, 56.252500],
             'ПДНТ «Губерния»': [58.014000, 56.254000],
             'ДК Солдатова': [58.014500, 56.254500],
-            'Бар 13/69': [58.015000, 56.255000],
             
             // Клубы и бары
             'Подвал': [58.012000, 56.251000],
@@ -379,7 +380,7 @@ class ConcertApp {
                     ${concert.place?.map ? `
                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8eaed;">
                             <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 500;">
-                                Маршрут
+                                Построить маршрут
                             </a>
                         </div>
                     ` : ''}

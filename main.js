@@ -16,6 +16,8 @@ class ConcertApp {
     }
     
     init() {
+        console.log('=== APP INIT ===');
+        console.log('API URL:', this.API_URL);
         this.setupEventListeners();
         this.loadConcerts();
     }
@@ -453,6 +455,9 @@ class ConcertApp {
     async loadConcerts() {
         const listElement = document.getElementById('concert-list');
         
+        console.log('=== LOADING CONCERTS ===');
+        console.log('API URL:', this.API_URL);
+        
         // Функция для попытки загрузки
         const attemptLoad = async (attempt = 1) => {
             try {
@@ -465,6 +470,7 @@ class ConcertApp {
                     }
                 });
                 console.log('Response status:', response.status);
+                console.log('Response OK:', response.ok);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1064,5 +1070,12 @@ if (window.ymaps) {
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-    new ConcertApp();
+    console.log('=== DOM LOADED ===');
+    console.log('Starting ConcertApp...');
+    try {
+        const app = new ConcertApp();
+        console.log('ConcertApp initialized:', app);
+    } catch (error) {
+        console.error('Failed to initialize ConcertApp:', error);
+    }
 });

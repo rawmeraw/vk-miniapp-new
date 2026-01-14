@@ -192,6 +192,19 @@ class ConcertApp {
             this.map.geoObjects.add(placemark);
             this.mapPlacemarks.push(placemark);
         });
+        
+        // Автоматическое масштабирование карты по всем меткам
+        if (this.mapPlacemarks.length > 0) {
+            // Создаем bounds для всех меток
+            const bounds = this.map.geoObjects.getBounds();
+            if (bounds) {
+                // Устанавливаем границы карты с небольшим отступом
+                this.map.setBounds(bounds, {
+                    checkZoomRange: true,
+                    zoomMargin: 50
+                });
+            }
+        }
     }
     
     createHintContent(concerts) {
@@ -232,7 +245,7 @@ class ConcertApp {
             }
         }
         
-        // Fallback: РЕАЛЬНЫЕ координаты популярных площадок Перми
+        // Fallback: РЕАЛЬНЫЕ координаты популярных площадок Перми (6 знаков после запятой)
         const knownPlaces = {
             // Основные концертные площадки
             'БКЗ': [58.015634, 56.233587],
@@ -249,7 +262,7 @@ class ConcertApp {
             'ТЮЗ': [58.011000, 56.252000],
             'Театр юного зрителя': [58.011000, 56.252000],
             
-            // Сегодняшние площадки - РЕАЛЬНЫЕ координаты
+            // Сегодняшние площадки - РЕАЛЬНЫЕ координаты (6 знаков)
             'ДК Калинина': [58.012200, 56.258200],
             'Бар 13/69': [58.013441, 56.247966],
             'Distortion 66': [58.012500, 56.251500],

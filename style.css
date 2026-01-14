@@ -116,15 +116,27 @@ body {
 .clear-btn {
     background: none;
     border: none;
-    color: #5f6368;
-    cursor: pointer;
     padding: 4px;
+    cursor: pointer;
     border-radius: 50%;
-    transition: background 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
 }
 
 .clear-btn:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(95, 99, 104, 0.1);
+}
+
+.clear-icon {
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235f6368'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
 }
 
 /* Переключатель видов */
@@ -179,8 +191,9 @@ body {
 
 /* Карта */
 .map-container {
+    height: calc(100vh - 200px);
+    min-height: 400px;
     position: relative;
-    height: 400px;
     margin: 0 16px 16px;
     border-radius: 16px;
     overflow: hidden;
@@ -190,6 +203,8 @@ body {
 .map {
     width: 100%;
     height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
     border-radius: 16px;
 }
 

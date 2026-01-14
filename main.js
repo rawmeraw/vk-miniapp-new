@@ -263,8 +263,8 @@ class ConcertApp {
             'Театр юного зрителя': [58.011000, 56.252000],
             
             // Сегодняшние площадки - РЕАЛЬНЫЕ координаты (6 знаков)
-            'ДК Калинина': [58.012200, 56.258200],
-            'Бар 13/69': [58.013441, 56.247966],
+            'ДК Калинина': ['58.012200', '56.258200'],
+            'Бар 13/69': ['58.013441', '56.247966'],
             'Distortion 66': [58.012500, 56.251500],
             'Distortion 66 Бар': [58.012500, 56.251500],
             'Munchen Pub': [58.013500, 56.252500],
@@ -299,14 +299,16 @@ class ConcertApp {
         // Ищем точное совпадение
         for (const [key, coords] of Object.entries(knownPlaces)) {
             if (placeNameLower === key.toLowerCase()) {
-                return coords;
+                // Конвертируем строки в числа с сохранением 6 знаков
+                return coords.map(coord => typeof coord === 'string' ? parseFloat(coord) : coord);
             }
         }
         
         // Ищем по ключевым словам
         for (const [key, coords] of Object.entries(knownPlaces)) {
             if (placeNameLower.includes(key.toLowerCase()) || key.toLowerCase().includes(placeNameLower)) {
-                return coords;
+                // Конвертируем строки в числа с сохранением 6 знаков
+                return coords.map(coord => typeof coord === 'string' ? parseFloat(coord) : coord);
             }
         }
         
@@ -372,14 +374,14 @@ class ConcertApp {
                         <img src="${imageUrl}" alt="${concert.title}" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #f1f3f4; flex-shrink: 0;" 
                              onerror="this.src='zhivoe_logo.jpg'">
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; margin-bottom: 4px; line-height: 1.3; font-family: 'Inter', sans-serif;">${concert.title}</div>
-                            <div style="font-size: 12px; color: #5f6368; margin-bottom: 4px; font-family: 'Inter', sans-serif;">${placeName}</div>
-                            <div style="font-size: 12px; color: #ff6b35; font-weight: 600; font-family: 'Inter', sans-serif;">${price}</div>
+                            <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; margin-bottom: 4px; line-height: 1.3; font-family: 'Jost', sans-serif;">${concert.title}</div>
+                            <div style="font-size: 12px; color: #5f6368; margin-bottom: 4px; font-family: 'Jost', sans-serif;">${placeName}</div>
+                            <div style="font-size: 12px; color: #ff6b35; font-weight: 600; font-family: 'Jost', sans-serif;">${price}</div>
                         </div>
                     </a>
                     ${concert.place?.map ? `
                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e8eaed;">
-                            <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 500;">
+                            <a href="${concert.place.map}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #ff6b35; text-decoration: none; font-size: 12px; font-family: 'Jost', sans-serif; font-weight: 500;">
                                 Построить маршрут
                             </a>
                         </div>

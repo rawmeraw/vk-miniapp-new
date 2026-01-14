@@ -16,8 +16,6 @@ class ConcertApp {
     }
     
     init() {
-        console.log('=== APP INIT ===');
-        console.log('API URL:', this.API_URL);
         this.setupEventListeners();
         this.loadConcerts();
     }
@@ -111,7 +109,6 @@ class ConcertApp {
             this.updateMapPlacemarks();
             
         } catch (error) {
-            console.error('Ошибка инициализации карты:', error);
             document.getElementById('map').innerHTML = `
                 <div class="error">
                     <div class="error-icon"><i class="fas fa-map"></i></div>
@@ -137,24 +134,7 @@ class ConcertApp {
         // Фильтруем только сегодняшние концерты
         const todayConcerts = this.filteredConcerts.filter(concert => concert.date === today);
         
-        console.log(`=== MAP UPDATE ===`);
-        console.log('Today date:', today);
-        console.log('Total filtered concerts:', this.filteredConcerts.length);
-        console.log('Today concerts:', todayConcerts.length);
-        
-        // ОТЛАДКА КООРДИНАТ
-        console.log('=== TODAY CONCERTS COORDINATES ===');
-        todayConcerts.forEach((concert, i) => {
-            const placeName = concert.place?.name || concert.place || 'Неизвестное место';
-            const coords = this.getPlaceCoordinates(placeName, concert.place);
-            console.log(`${i + 1}. "${concert.title}" at "${placeName}"`);
-            console.log(`   Raw coordinates: ${concert.place?.coordinates}`);
-            console.log(`   Parsed: [${coords[0]}, ${coords[1]}]`);
-        });
-        console.log('=== END COORDINATES ===');
-        
         if (todayConcerts.length === 0) {
-            console.log('No concerts today for map');
             return;
         }
         
@@ -224,24 +204,22 @@ class ConcertApp {
         // Если у места есть координаты из API, используем их
         if (place && place.coordinates) {
             try {
-                // Парсим координаты точно как на основном сайте
-                // Формат: "58.015634, 56.233587"
                 const coordStr = place.coordinates.toString();
                 
-                const lat = parseFloat(coordStr.slice(0, 11));
-                const lng = parseFloat(coordStr.slice(12));
+                // Парсим с точностью до 6 знаков после запятой
+                const lat = parseFloat(parseFloat(coordStr.slice(0, 11)).toFixed(6));
+                const lng = parseFloat(parseFloat(coordStr.slice(12)).toFixed(6));
                 
                 if (!isNaN(lat) && !isNaN(lng)) {
                     return [lat, lng];
                 } else {
-                    // Fallback: стандартный парсинг через запятую
-                    const coords = place.coordinates.split(',').map(c => parseFloat(c.trim()));
+                    const coords = place.coordinates.split(',').map(c => parseFloat(parseFloat(c.trim()).toFixed(6)));
                     if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
                         return coords;
                     }
                 }
             } catch (e) {
-                console.warn(`Failed to parse coordinates for ${placeName}:`, place.coordinates, e);
+                // Ошибка парсинга координат
             }
         }
         
@@ -464,13 +442,9 @@ class ConcertApp {
     async loadConcerts() {
         const listElement = document.getElementById('concert-list');
         
-        console.log('=== LOADING CONCERTS ===');
-        console.log('API URL:', this.API_URL);
-        
         // Функция для попытки загрузки
         const attemptLoad = async (attempt = 1) => {
             try {
-                console.log(`Loading concerts (attempt ${attempt}) from:`, this.API_URL);
                 const response = await fetch(this.API_URL, {
                     method: 'GET',
                     headers: {
@@ -478,20 +452,15 @@ class ConcertApp {
                         'Content-Type': 'application/json'
                     }
                 });
-                console.log('Response status:', response.status);
-                console.log('Response OK:', response.ok);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 let data = await response.json();
-                console.log('Raw API data received:', !!data);
-                console.log('Number of concerts:', data?.length || 0);
                 
                 if (!Array.isArray(data) || !data.length) {
                     if (attempt < 3) {
-                        console.log('No data received, retrying...');
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         return attemptLoad(attempt + 1);
                     }
@@ -499,41 +468,17 @@ class ConcertApp {
                     return;
                 }
                 
-                // Отладка первого концерта
-                if (data[0]) {
-                    console.log('=== FIRST CONCERT SAMPLE ===');
-                    console.log('Title:', data[0].title);
-                    console.log('Date:', data[0].date);
-                    console.log('Time:', data[0].time);
-                    console.log('Rating:', data[0].rating);
-                    console.log('Tags:', data[0].tags);
-                    console.log('Tag categories:', data[0].tag_categories);
-                    console.log('Images:', {
-                        image: data[0].image,
-                        main_image: data[0].main_image,
-                        small_pic: data[0].small_pic
-                    });
-                    console.log('Place:', data[0].place);
-                    console.log('Is published:', data[0].is_published);
-                    console.log('=== END SAMPLE ===');
-                }
-                
                 // Фильтруем будущие концерты
                 data = this.filterFutureConcerts(data);
-                console.log('Future concerts:', data.length);
                 
                 // Сортируем концерты
                 this.concerts = this.sortConcerts(data);
                 this.filteredConcerts = [...this.concerts];
                 
-                console.log('Final concerts count:', this.concerts.length);
-                
                 this.renderConcerts();
                 
             } catch (error) {
-                console.error(`Load attempt ${attempt} failed:`, error);
                 if (attempt < 3) {
-                    console.log('Retrying in 2 seconds...');
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     return attemptLoad(attempt + 1);
                 }
@@ -546,48 +491,26 @@ class ConcertApp {
     
     filterFutureConcerts(concerts) {
         const now = new Date();
-        // Устанавливаем время на начало текущего дня для более мягкой фильтрации
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
-        console.log('=== FILTERING CONCERTS ===');
-        console.log('Total concerts before filtering:', concerts.length);
-        console.log('Current time:', now.toISOString());
-        console.log('Today start (for filtering):', todayStart.toISOString());
-        
-        const filtered = concerts.filter((concert, index) => {
+        const filtered = concerts.filter((concert) => {
             if (!concert.date) {
-                console.log(`Concert ${index + 1} (${concert.title}): No date - KEEPING`);
-                return true; // Оставляем концерты без даты
+                return true;
             }
             
-            // Парсим дату концерта
             const [year, month, day] = concert.date.split('-').map(Number);
             const concertDate = new Date(year, month - 1, day);
             
-            // Если есть время, добавляем его
             if (concert.time) {
                 const [hour, minute] = concert.time.split(':').map(Number);
                 concertDate.setHours(hour, minute);
             } else {
-                // Если времени нет, считаем что концерт в конце дня
                 concertDate.setHours(23, 59);
             }
             
-            // Сравниваем с началом сегодняшнего дня, а не с текущим временем
-            const isFuture = concertDate >= todayStart;
-            
-            if (!isFuture) {
-                console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - FILTERED OUT (past)`);
-            } else {
-                console.log(`Concert ${index + 1} (${concert.title}): ${concertDate.toISOString()} - KEEPING (future/today)`);
-            }
-            
-            return isFuture;
+            return concertDate >= todayStart;
         });
         
-        console.log('Concerts after filtering:', filtered.length);
-        console.log('Filtered out:', concerts.length - filtered.length, 'concerts');
-        console.log('=== END FILTERING ===');
         return filtered;
     }
     
@@ -677,7 +600,6 @@ class ConcertApp {
             return false;
         }
         
-        // Проверяем на заглушки VK
         if (url.includes('camera_200.png') || 
             url === 'https://vk.ru/images/camera_200.png' ||
             url.includes('vk.ru/images/') ||
@@ -685,7 +607,6 @@ class ConcertApp {
             return false;
         }
         
-        // Проверяем на другие заглушки
         if (url.includes('placeholder') || 
             url.includes('no-image') ||
             url.includes('default.jpg') ||
@@ -693,26 +614,8 @@ class ConcertApp {
             return false;
         }
         
-        // Проверяем что это похоже на URL изображения
         if (!url.startsWith('http')) {
             return false;
-        }
-        
-        // Дополнительная проверка на валидные домены изображений
-        const validDomains = [
-            'permlive.ru',
-            'vkuserphoto.ru', 
-            'sun9-',  // VK CDN
-            'pp.userapi.com',
-            'pp.vk.me',
-            'cs',  // VK CDN
-            'imgur.com',
-            'i.imgur.com'
-        ];
-        
-        const hasValidDomain = validDomains.some(domain => url.includes(domain));
-        if (!hasValidDomain) {
-            console.log(`  -> Unknown domain for image: ${url}`);
         }
         
         return true;
@@ -744,44 +647,21 @@ class ConcertApp {
         
         let imageUrl = null;
         
-        console.log(`=== IMAGE DEBUG for ${title} ===`);
-        console.log('Available image fields:', {
-            image: concert.image,
-            main_image: concert.main_image,
-            small_pic: concert.small_pic,
-            poster: concert.poster,
-            photo: concert.photo,
-            avatar: concert.avatar,
-            thumbnail: concert.thumbnail,
-            cover: concert.cover,
-            images: concert.images,
-            place_avatar: concert.place?.avatar,
-            place_image: concert.place?.image
-        });
-        
-        // Проверяем каждое поле на валидность
         for (const field of imageFields) {
             if (this.isValidImageUrl(field)) {
                 imageUrl = field;
-                console.log('  -> Selected valid image:', imageUrl);
                 break;
             }
         }
         
         if (!imageUrl) {
             imageUrl = 'zhivoe_logo.jpg';
-            console.log('  -> No valid images found, using fallback logo');
         } else {
-            // Если это изображение с permlive.ru, добавляем параметры размера
             if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
-                // Убираем старые параметры если есть
                 imageUrl = imageUrl.split('?')[0];
-                // Добавляем новые параметры для получения изображения 300px
                 imageUrl += '?w=300&h=300&fit=crop&q=80';
-                console.log('  -> Optimized URL:', imageUrl);
             }
         }
-        console.log('=== END IMAGE DEBUG ===');
         
         // Дата и время
         const dateLabel = this.formatDate(date, time);
@@ -882,21 +762,12 @@ class ConcertApp {
     formatTags(concert) {
         if (!Array.isArray(concert.tags) || !concert.tags.length) return '';
         
-        console.log(`=== TAGS DEBUG for ${concert.title} ===`);
-        console.log('Tags:', concert.tags);
-        console.log('Tag categories:', concert.tag_categories);
-        
-        // Показываем все теги с правильными цветами
         return concert.tags.map((tag, index) => {
             const tagName = tag.name || tag;
-            
-            // Определяем цветовую схему на основе категории тега
             let tagClass = 'tag genre';
             
-            // Сначала проверяем tag_categories если есть
             if (concert.tag_categories && concert.tag_categories.length > index) {
                 const category = concert.tag_categories[index].toLowerCase();
-                console.log(`Tag "${tagName}" has category: ${category}`);
                 if (category === 'live') {
                     tagClass += ' live';
                 } else if (category === 'pop') {
@@ -905,25 +776,18 @@ class ConcertApp {
                     tagClass += ' classic';
                 }
             } else {
-                // Fallback: определяем по названию тега
                 const tagNameLower = tagName.toLowerCase();
-                console.log(`Tag "${tagName}" - using fallback categorization`);
                 
                 if (tagNameLower.includes('live') || tagNameLower.includes('рок') || tagNameLower.includes('метал') || 
                     tagNameLower.includes('панк') || tagNameLower.includes('хардкор') || tagNameLower.includes('альтернатив')) {
                     tagClass += ' live';
-                    console.log('  -> Categorized as LIVE');
                 } else if (tagNameLower.includes('pop') || tagNameLower.includes('поп') || tagNameLower.includes('эстрада') || 
                           tagNameLower.includes('диско') || tagNameLower.includes('электрон') || tagNameLower.includes('хип-хоп')) {
                     tagClass += ' pop';
-                    console.log('  -> Categorized as POP');
                 } else if (tagNameLower.includes('classic') || tagNameLower.includes('классик') || tagNameLower.includes('джаз') || 
                           tagNameLower.includes('блюз') || tagNameLower.includes('фолк') || tagNameLower.includes('кантри') ||
                           tagNameLower.includes('инди') || tagNameLower.includes('авторск')) {
                     tagClass += ' classic';
-                    console.log('  -> Categorized as CLASSIC');
-                } else {
-                    console.log('  -> No specific category, using default');
                 }
             }
             
@@ -933,14 +797,11 @@ class ConcertApp {
     
     formatRatingBadge(rating) {
         const ratingValue = parseFloat(rating || 0);
-        console.log(`Rating for concert: ${rating} -> parsed: ${ratingValue}`);
         
         if (ratingValue < 4.0) {
-            console.log('  -> Rating below 4.0, not showing badge');
             return '';
         }
         
-        console.log('  -> Showing rating badge');
         return `
             <div class="rating-badge-inline">
                 <i class="fas fa-star"></i>
@@ -1078,12 +939,5 @@ if (window.ymaps) {
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('=== DOM LOADED ===');
-    console.log('Starting ConcertApp...');
-    try {
-        const app = new ConcertApp();
-        console.log('ConcertApp initialized:', app);
-    } catch (error) {
-        console.error('Failed to initialize ConcertApp:', error);
-    }
+    new ConcertApp();
 });

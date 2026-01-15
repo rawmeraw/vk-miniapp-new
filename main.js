@@ -128,8 +128,12 @@ class ConcertApp {
         });
         this.mapPlacemarks = [];
         
-        // Получаем сегодняшнюю дату
-        const today = new Date().toISOString().split('T')[0];
+        // Получаем сегодняшнюю дату по местному времени (не UTC!)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         
         // Фильтруем только сегодняшние концерты
         const todayConcerts = this.filteredConcerts.filter(concert => concert.date === today);

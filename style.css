@@ -191,9 +191,8 @@ body {
 
 /* Карта */
 .map-container {
-    height: calc(100vh - 280px);
-    min-height: 300px;
-    max-height: 500px;
+    height: calc(100vh - 240px);
+    min-height: 400px;
     position: relative;
     margin: 0 16px 16px;
     border-radius: 16px;
@@ -860,7 +859,8 @@ body {
     .map-container {
         margin-left: 12px;
         margin-right: 12px;
-        height: 300px;
+        height: calc(100vh - 240px);
+        min-height: 400px;
     }
     
     .concert-card {

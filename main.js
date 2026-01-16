@@ -10,7 +10,7 @@ class ConcertApp {
         this.searchQuery = '';
         this.currentView = 'list';
         this.map = null;
-        this.mapPlacemarks = [];
+        this.clusterer = null;
         
         this.init();
     }
@@ -102,8 +102,20 @@ class ConcertApp {
             this.map = new ymaps.Map('map', {
                 center: [58.0105, 56.2502],
                 zoom: 12,
-                controls: ['zoomControl'] // Возвращаем кнопки масштаба
+                controls: ['zoomControl']
             });
+            
+            // Создаем кластеризатор с цветными круговыми диаграммами
+            this.clusterer = new ymaps.Clusterer({
+                preset: 'islands#redClusterIcons',
+                clusterIconLayout: 'default#pieChart',
+                clusterIconPieChartRadius: 15,
+                clusterIconPieChartCoreRadius: 10,
+                zoomMargin: 50
+            });
+            
+            // Добавляем кластеризатор на карту
+            this.map.geoObjects.add(this.clusterer);
             
             // Добавляем метки концертов
             this.updateMapPlacemarks();
@@ -120,13 +132,10 @@ class ConcertApp {
     }
     
     updateMapPlacemarks() {
-        if (!this.map) return;
+        if (!this.map || !this.clusterer) return;
         
-        // Очищаем старые метки
-        this.mapPlacemarks.forEach(placemark => {
-            this.map.geoObjects.remove(placemark);
-        });
-        this.mapPlacemarks = [];
+        // Очищаем кластеризатор
+        this.clusterer.removeAll();
         
         // Получаем сегодняшнюю дату по местному времени (не UTC!)
         const now = new Date();
@@ -142,50 +151,18 @@ class ConcertApp {
             return;
         }
         
-        // Создаем отдельную метку для каждого концерта
-        todayConcerts.forEach((concert, index) => {
+        // Создаем маркеры и добавляем в кластеризатор
+        todayConcerts.forEach((concert) => {
             const placeName = concert.place?.name || concert.place || 'Неизвестное место';
             const coords = this.getPlaceCoordinates(placeName, concert.place);
             
-            console.log(`Creating placemark for ${placeName}:`, coords);
-            
-            // Добавляем небольшое смещение если концерты в одном месте
-            const offset = index * 0.0001;
-            const adjustedCoords = [coords[0] + offset, coords[1] + offset];
-            
-            console.log(`Adjusted coordinates for ${placeName}:`, adjustedCoords);
-            
-            // Определяем цвет маркера на основе тегов (как на основном сайте)
-            let preset = 'islands#oliveStretchyIcon'; // По умолчанию
-            if (concert.tags && concert.tags.length > 0) {
-                const firstTag = concert.tags[0];
-                const tagName = firstTag.name || firstTag;
-                
-                // Определяем тип тега для цвета маркера
-                if (concert.tag_categories && concert.tag_categories.length > 0) {
-                    const category = concert.tag_categories[0].toLowerCase();
-                    if (category === 'live') {
-                        preset = 'islands#redStretchyIcon';
-                    } else if (category === 'pop') {
-                        preset = 'islands#lightblueStretchyIcon';
-                    } else {
-                        preset = 'islands#oliveStretchyIcon';
-                    }
-                } else {
-                    // Fallback определение по названию тега
-                    const tagLower = tagName.toLowerCase();
-                    if (tagLower.includes('live') || tagLower.includes('рок') || tagLower.includes('метал')) {
-                        preset = 'islands#redStretchyIcon';
-                    } else if (tagLower.includes('pop') || tagLower.includes('поп') || tagLower.includes('электрон')) {
-                        preset = 'islands#lightblueStretchyIcon';
-                    }
-                }
-            }
+            // Определяем цвет маркера на основе тегов
+            const preset = this.getPlacemarkPreset(concert);
             
             const time = (concert.time || '').slice(0, 5);
             const iconContent = `${time} ${concert.title}`;
             
-            const placemark = new ymaps.Placemark(adjustedCoords, {
+            const placemark = new ymaps.Placemark(coords, {
                 balloonContent: this.createSingleConcertBalloon(concert),
                 hintContent: this.createSingleConcertHint(concert),
                 iconContent: iconContent
@@ -193,16 +170,13 @@ class ConcertApp {
                 preset: preset
             });
             
-            this.map.geoObjects.add(placemark);
-            this.mapPlacemarks.push(placemark);
+            this.clusterer.add(placemark);
         });
         
         // Автоматическое масштабирование карты по всем меткам
-        if (this.mapPlacemarks.length > 0) {
-            // Создаем bounds для всех меток
-            const bounds = this.map.geoObjects.getBounds();
+        if (this.clusterer.getGeoObjects().length > 0) {
+            const bounds = this.clusterer.getBounds();
             if (bounds) {
-                // Устанавливаем границы карты с небольшим отступом
                 this.map.setBounds(bounds, {
                     checkZoomRange: true,
                     zoomMargin: 50
@@ -252,6 +226,31 @@ class ConcertApp {
         // Если нет координат в API, возвращаем центр Перми
         console.log('No coordinates found for', placeName, 'using Perm center');
         return [58.0105, 56.2502];
+    }
+    
+    getPlacemarkPreset(concert) {
+        // Определяем цвет маркера на основе категории тега
+        if (concert.tag_categories && concert.tag_categories.length > 0) {
+            const category = concert.tag_categories[0].toLowerCase();
+            if (category === 'live') return 'islands#redStretchyIcon';
+            if (category === 'pop') return 'islands#lightblueStretchyIcon';
+            return 'islands#oliveStretchyIcon';
+        }
+        
+        // Fallback: определение по названию тега
+        if (concert.tags && concert.tags.length > 0) {
+            const firstTag = concert.tags[0];
+            const tagName = (firstTag.name || firstTag).toLowerCase();
+            
+            if (tagName.includes('live') || tagName.includes('рок') || tagName.includes('метал')) {
+                return 'islands#redStretchyIcon';
+            }
+            if (tagName.includes('pop') || tagName.includes('поп') || tagName.includes('электрон')) {
+                return 'islands#lightblueStretchyIcon';
+            }
+        }
+        
+        return 'islands#oliveStretchyIcon';
     }
     
     createSingleConcertHint(concert) {

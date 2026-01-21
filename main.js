@@ -447,6 +447,12 @@ class ConcertApp {
     async loadBenefitConcerts() {
         const listElement = document.getElementById('benefits-list');
         
+        // Если данные уже загружены, не загружаем снова
+        if (this.benefitConcerts.length > 0) {
+            this.renderBenefitConcerts();
+            return;
+        }
+        
         const attemptLoad = async (attempt = 1) => {
             try {
                 const response = await fetch(this.BENEFIT_API_URL, {
@@ -485,11 +491,15 @@ class ConcertApp {
                 this.renderBenefitConcerts();
                 
             } catch (error) {
+                console.error(`Attempt ${attempt} failed:`, error);
                 if (attempt < 3) {
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     return attemptLoad(attempt + 1);
                 }
-                this.showErrorBenefits(`Не удалось загрузить выгодные предложения после ${attempt} попыток: ${error.message}`);
+                // Показываем ошибку только если данных действительно нет
+                if (this.benefitConcerts.length === 0) {
+                    this.showErrorBenefits(`Не удалось загрузить выгодные предложения после ${attempt} попыток: ${error.message}`);
+                }
             }
         };
         
@@ -505,8 +515,13 @@ class ConcertApp {
             return;
         }
         
-        listElement.innerHTML = this.benefitConcerts.map(concert => this.formatConcert(concert)).join('');
-        countElement.textContent = `${this.benefitConcerts.length} ${this.getConcertWord(this.benefitConcerts.length)}`;
+        try {
+            listElement.innerHTML = this.benefitConcerts.map(concert => this.formatConcert(concert)).join('');
+            countElement.textContent = this.benefitConcerts.length;
+        } catch (error) {
+            console.error('Error rendering benefit concerts:', error);
+            this.showErrorBenefits('Ошибка рендеринга', error.message);
+        }
     }
     
     showEmptyBenefitsState() {
@@ -525,7 +540,6 @@ class ConcertApp {
     
     showErrorBenefits(message) {
         const listElement = document.getElementById('benefits-list');
-        const countElement = document.getElementById('benefits-count');
         
         listElement.innerHTML = `
             <div class="error-state">
@@ -534,7 +548,12 @@ class ConcertApp {
                 <div class="error-description">Не удалось загрузить предложения с низкими ценами</div>
             </div>
         `;
-        countElement.textContent = 'Ошибка';
+        
+        // Обновляем счетчик только если есть реальная ошибка, не если данные уже загружены
+        if (this.benefitConcerts.length === 0) {
+            const countElement = document.getElementById('benefits-count');
+            countElement.textContent = 'Ошибка';
+        }
     }
     
     filterFutureConcerts(concerts) {

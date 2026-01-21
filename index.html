@@ -38,6 +38,9 @@
             <button class="view-btn" data-view="map">
                 Карта
             </button>
+            <button class="view-btn" data-view="benefit">
+                Выгодно
+            </button>
         </div>
 
         <!-- Карта -->
@@ -55,6 +58,20 @@
                 <div class="loading">
                     <div class="loading-spinner"></div>
                     <div>Загрузка концертов...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Выгодные предложения -->
+        <div class="benefits-section" id="benefits-section" style="display: none;">
+            <div class="section-header">
+                <h2>Выгодные предложения</h2>
+                <div class="concerts-count" id="benefits-count"></div>
+            </div>
+            <div id="benefits-list" class="concert-list">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Загрузка выгодных предложений...</div>
                 </div>
             </div>
         </div>

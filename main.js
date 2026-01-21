@@ -3,7 +3,9 @@
 class ConcertApp {
     constructor() {
         this.API_URL = 'https://permlive.ru/api/concerts/';
+        this.BENEFIT_API_URL = 'https://permlive.ru/api/benefit/';
         this.concerts = [];
+        this.benefitConcerts = [];
         this.filteredConcerts = [];
         this.selectedDate = null;
         this.currentMonth = new Date();
@@ -60,10 +62,8 @@ class ConcertApp {
         
         // Скрываем все виды
         document.getElementById('map-view').style.display = 'none';
-        document.getElementById('concert-list').style.display = 'none';
-        
-        // Управляем видимостью заголовка секции
-        const sectionHeader = document.querySelector('.section-header');
+        document.getElementById('concert-list').parentElement.style.display = 'none';
+        document.getElementById('benefits-section').style.display = 'none';
         
         this.currentView = view;
         
@@ -71,13 +71,19 @@ class ConcertApp {
         switch (view) {
             case 'map':
                 document.getElementById('map-view').style.display = 'block';
-                if (sectionHeader) sectionHeader.style.display = 'none'; // Скрываем заголовок на карте
                 this.initMap();
+                break;
+            case 'benefit':
+                document.getElementById('benefits-section').style.display = 'block';
+                if (this.benefitConcerts.length === 0) {
+                    this.loadBenefitConcerts();
+                } else {
+                    this.renderBenefitConcerts();
+                }
                 break;
             case 'list':
             default:
-                document.getElementById('concert-list').style.display = 'block';
-                if (sectionHeader) sectionHeader.style.display = 'flex'; // Показываем заголовок в списке
+                document.getElementById('concert-list').parentElement.style.display = 'block';
                 this.renderConcerts();
                 break;
         }
@@ -436,6 +442,99 @@ class ConcertApp {
         };
         
         await attemptLoad();
+    }
+    
+    async loadBenefitConcerts() {
+        const listElement = document.getElementById('benefits-list');
+        
+        const attemptLoad = async (attempt = 1) => {
+            try {
+                const response = await fetch(this.BENEFIT_API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                let data = await response.json();
+                
+                if (!Array.isArray(data) || !data.length) {
+                    if (attempt < 3) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        return attemptLoad(attempt + 1);
+                    }
+                    this.showEmptyBenefitsState();
+                    return;
+                }
+                
+                // Фильтруем будущие концерты
+                data = this.filterFutureConcerts(data);
+                
+                // Сортируем по дате добавления (новые первые)
+                this.benefitConcerts = data.sort((a, b) => {
+                    const dateA = new Date(a.date_added || 0);
+                    const dateB = new Date(b.date_added || 0);
+                    return dateB - dateA;
+                });
+                
+                this.renderBenefitConcerts();
+                
+            } catch (error) {
+                if (attempt < 3) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    return attemptLoad(attempt + 1);
+                }
+                this.showErrorBenefits(`Не удалось загрузить выгодные предложения после ${attempt} попыток: ${error.message}`);
+            }
+        };
+        
+        await attemptLoad();
+    }
+    
+    renderBenefitConcerts() {
+        const listElement = document.getElementById('benefits-list');
+        const countElement = document.getElementById('benefits-count');
+        
+        if (!this.benefitConcerts.length) {
+            this.showEmptyBenefitsState();
+            return;
+        }
+        
+        listElement.innerHTML = this.benefitConcerts.map(concert => this.createConcertCard(concert)).join('');
+        countElement.textContent = `${this.benefitConcerts.length} ${this.getConcertWord(this.benefitConcerts.length)}`;
+    }
+    
+    showEmptyBenefitsState() {
+        const listElement = document.getElementById('benefits-list');
+        const countElement = document.getElementById('benefits-count');
+        
+        listElement.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🎯</div>
+                <div class="empty-title">Нет выгодных предложений</div>
+                <div class="empty-description">Сейчас нет концертов с реферальными ссылками</div>
+            </div>
+        `;
+        countElement.textContent = '0 концертов';
+    }
+    
+    showErrorBenefits(message) {
+        const listElement = document.getElementById('benefits-list');
+        const countElement = document.getElementById('benefits-count');
+        
+        listElement.innerHTML = `
+            <div class="error-state">
+                <div class="error-icon">⚠️</div>
+                <div class="error-title">Ошибка загрузки</div>
+                <div class="error-description">${message}</div>
+            </div>
+        `;
+        countElement.textContent = 'Ошибка';
     }
     
     filterFutureConcerts(concerts) {

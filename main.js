@@ -505,7 +505,7 @@ class ConcertApp {
             return;
         }
         
-        listElement.innerHTML = this.benefitConcerts.map(concert => this.createConcertCard(concert)).join('');
+        listElement.innerHTML = this.benefitConcerts.map(concert => this.formatConcert(concert)).join('');
         countElement.textContent = `${this.benefitConcerts.length} ${this.getConcertWord(this.benefitConcerts.length)}`;
     }
     
@@ -517,7 +517,7 @@ class ConcertApp {
             <div class="empty-state">
                 <div class="empty-icon">🎯</div>
                 <div class="empty-title">Нет выгодных предложений</div>
-                <div class="empty-description">Сейчас нет концертов с реферальными ссылками</div>
+                <div class="empty-description">Сейчас нет концертов с низкими ценами на билеты</div>
             </div>
         `;
         countElement.textContent = '0 концертов';
@@ -531,7 +531,7 @@ class ConcertApp {
             <div class="error-state">
                 <div class="error-icon">⚠️</div>
                 <div class="error-title">Ошибка загрузки</div>
-                <div class="error-description">${message}</div>
+                <div class="error-description">Не удалось загрузить предложения с низкими ценами</div>
             </div>
         `;
         countElement.textContent = 'Ошибка';

@@ -267,8 +267,8 @@ class ConcertApp {
     createSingleConcertBalloon(concert) {
         // Используем ту же логику выбора изображения
         const imageFields = [
-            concert.image,
-            concert.main_image,
+            concert.main_image,      // Приоритет: основное изображение
+            concert.image,           // Запасное поле изображения
             concert.small_pic, 
             concert.poster,
             concert.photo,
@@ -326,9 +326,9 @@ class ConcertApp {
         const concertsHtml = concerts.slice(0, 3).map(concert => {
             // Используем ту же логику выбора изображения
             const imageFields = [
-                concert.main_image,
+                concert.main_image,      // Приоритет: основное изображение
+                concert.image,           // Запасное поле изображения
                 concert.small_pic, 
-                concert.image,
                 concert.poster,
                 concert.photo
             ];
@@ -710,6 +710,13 @@ class ConcertApp {
             return false;
         }
         
+        // Отфильтровываем МТСовскую заглушку
+        if (url.includes('ticketland.ru/img/mobile/images/notimage_wide.png') ||
+            url.includes('notimage_wide.png') ||
+            url.includes('ticketland.ru') && url.includes('notimage')) {
+            return false;
+        }
+        
         if (url.includes('placeholder') || 
             url.includes('no-image') ||
             url.includes('default.jpg') ||
@@ -732,8 +739,8 @@ class ConcertApp {
         
         // Изображение - пробуем разные поля в порядке приоритета
         const imageFields = [
-            concert.image,           // Основное поле изображения в API
-            concert.main_image,      // На случай если добавят позже
+            concert.main_image,      // Приоритет: основное изображение
+            concert.image,           // Запасное поле изображения
             concert.small_pic,       // Уменьшенная версия
             concert.poster,          // Постер
             concert.photo,           // Фото

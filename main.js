@@ -284,8 +284,10 @@ class ConcertApp {
         let imageUrl = null;
         for (const field of imageFields) {
             if (this.isValidImageUrl(field)) {
-                imageUrl = field;
-                break;
+                imageUrl = this.optimizeImageForApp(field);
+                if (imageUrl) {
+                    break;
+                }
             }
         }
         
@@ -336,8 +338,10 @@ class ConcertApp {
             let imageUrl = null;
             for (const field of imageFields) {
                 if (this.isValidImageUrl(field)) {
-                    imageUrl = field;
-                    break;
+                    imageUrl = this.optimizeImageForApp(field);
+                    if (imageUrl) {
+                        break;
+                    }
                 }
             }
             
@@ -731,6 +735,74 @@ class ConcertApp {
         return true;
     }
     
+    optimizeImageForApp(url) {
+        // Оптимизирует URL изображения для VK MiniApp
+        if (!url || typeof url !== 'string' || url.trim() === '') {
+            return url;
+        }
+        
+        // Отфильтровываем МТСовскую заглушку
+        if (url.includes('ticketland.ru/img/mobile/images/notimage_wide.png') ||
+            url.includes('notimage_wide.png') ||
+            (url.includes('ticketland.ru') && url.includes('notimage'))) {
+            return null;
+        }
+        
+        // Обработка VK изображений
+        if (url.includes('vkuserphoto.ru') || url.includes('userapi.com')) {
+            return this.optimizeVkImage(url, 'vkapp');
+        }
+        
+        // Обработка AfishaGoroda изображений
+        if (url.includes('afishagoroda.ru')) {
+            return this.optimizeAfishagorodaImage(url, 'vkapp');
+        }
+        
+        // Обработка mycdn.me изображений
+        if (url.includes('mycdn.me')) {
+            return this.optimizeMycdnImage(url, 'vkapp');
+        }
+        
+        // Для permlive.ru изображений добавляем оптимизацию
+        if (url.includes('permlive.ru') && !url.includes('zhivoe_logo.jpg')) {
+            const cleanUrl = url.split('?')[0];
+            return `${cleanUrl}?w=300&h=300&fit=crop&q=80`;
+        }
+        
+        return url;
+    }
+    
+    optimizeVkImage(url, context) {
+        // Оптимизирует VK изображение для VK MiniApp
+        // Для VK MiniApp используем размер 300x300
+        const targetSize = '300x300';
+        
+        // Заменяем существующий cs= параметр
+        let optimizedUrl = url.replace(/cs=\d+x\d+/, `cs=${targetSize}`);
+        
+        // Если cs= параметра нет, добавляем его
+        if (!optimizedUrl.includes('cs=')) {
+            const separator = optimizedUrl.includes('?') ? '&' : '?';
+            optimizedUrl += `${separator}cs=${targetSize}`;
+        }
+        
+        return optimizedUrl;
+    }
+    
+    optimizeAfishagorodaImage(url, context) {
+        // Оптимизирует AfishaGoroda изображение для VK MiniApp
+        // Для AfishaGoroda добавляем параметры размера
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}width=300&height=300&mode=crop`;
+    }
+    
+    optimizeMycdnImage(url, context) {
+        // Оптимизирует mycdn.me изображение для VK MiniApp
+        // Для mycdn.me добавляем size параметр
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}size=300x300`;
+    }
+    
     formatConcert(concert) {
         const title = concert.title || 'Без названия';
         const date = concert.date || '';
@@ -759,18 +831,15 @@ class ConcertApp {
         
         for (const field of imageFields) {
             if (this.isValidImageUrl(field)) {
-                imageUrl = field;
-                break;
+                imageUrl = this.optimizeImageForApp(field);
+                if (imageUrl) {
+                    break;
+                }
             }
         }
         
         if (!imageUrl) {
             imageUrl = 'zhivoe_logo.jpg';
-        } else {
-            if (imageUrl.includes('permlive.ru') && !imageUrl.includes('zhivoe_logo.jpg')) {
-                imageUrl = imageUrl.split('?')[0];
-                imageUrl += '?w=300&h=300&fit=crop&q=80';
-            }
         }
         
         // Дата и время

@@ -729,7 +729,7 @@ class ConcertApp {
         }
         
         if (!url.startsWith('http')) {
-            return false;
+            return true;  // Пропускаем относительные пути для локальных файлов
         }
         
         return true;

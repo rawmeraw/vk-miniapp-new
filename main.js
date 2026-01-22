@@ -510,14 +510,47 @@ class ConcertApp {
         const listElement = document.getElementById('benefits-list');
         const countElement = document.getElementById('benefits-count');
         
-        if (!this.benefitConcerts.length) {
-            this.showEmptyBenefitsState();
+        // Применяем фильтрацию к benefitConcerts
+        let filteredConcerts = [...this.benefitConcerts];
+        
+        // Фильтр по поиску
+        if (this.searchQuery) {
+            filteredConcerts = filteredConcerts.filter(concert => {
+                const title = (concert.title || '').toLowerCase();
+                const place = (concert.place?.name || concert.place || '').toLowerCase();
+                const tags = Array.isArray(concert.tags) ? 
+                    concert.tags.map(tag => (tag.name || tag).toLowerCase()).join(' ') : '';
+                
+                return title.includes(this.searchQuery) || 
+                       place.includes(this.searchQuery) || 
+                       tags.includes(this.searchQuery);
+            });
+        }
+        
+        // Фильтр по дате
+        if (this.selectedDate) {
+            filteredConcerts = filteredConcerts.filter(concert => concert.date === this.selectedDate);
+        }
+        
+        if (!filteredConcerts.length) {
+            if (this.searchQuery || this.selectedDate) {
+                listElement.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🔍</div>
+                        <div class="empty-title">Ничего не найдено</div>
+                        <div class="empty-description">Попробуйте изменить параметры поиска</div>
+                    </div>
+                `;
+                countElement.textContent = '0 концертов';
+            } else {
+                this.showEmptyBenefitsState();
+            }
             return;
         }
         
         try {
-            listElement.innerHTML = this.benefitConcerts.map(concert => this.formatConcert(concert)).join('');
-            countElement.textContent = this.benefitConcerts.length;
+            listElement.innerHTML = filteredConcerts.map(concert => this.formatConcert(concert)).join('');
+            countElement.textContent = filteredConcerts.length;
         } catch (error) {
             console.error('Error rendering benefit concerts:', error);
             this.showErrorBenefits('Ошибка рендеринга', error.message);
@@ -637,6 +670,9 @@ class ConcertApp {
                 break;
             case 'map':
                 this.updateMapPlacemarks();
+                break;
+            case 'benefit':
+                this.renderBenefitConcerts();
                 break;
         }
         

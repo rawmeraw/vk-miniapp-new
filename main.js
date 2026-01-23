@@ -185,7 +185,7 @@ class ConcertApp {
                         Это приложение доступно только для подписчиков VK Donut сообщества "Живое!".
                         Подпишитесь, чтобы получить доступ к афише концертов Перми.
                     </p>
-                    <a href="https://vk.com/club${this.GROUP_ID}" target="_blank" class="paywall-button">
+                    <a href="https://vk.com/zhivoe_perm?w=donut_payment-222461642&levelId=2635" target="_blank" class="paywall-button">
                         Перейти к подписке
                     </a>
                     <button onclick="location.reload()" class="paywall-button paywall-button-secondary">

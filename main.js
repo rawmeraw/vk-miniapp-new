@@ -4,6 +4,9 @@ class ConcertApp {
     constructor() {
         this.API_URL = 'https://permlive.ru/api/concerts/';
         this.BENEFIT_API_URL = 'https://permlive.ru/api/benefit/';
+        this.VK_API_URL = 'https://api.vk.ru/method/';
+        this.GROUP_ID = '222461642'; // ID группы VK
+        this.VK_API_VERSION = '5.199';
         this.concerts = [];
         this.benefitConcerts = [];
         this.filteredConcerts = [];
@@ -13,13 +16,187 @@ class ConcertApp {
         this.currentView = 'list';
         this.map = null;
         this.clusterer = null;
+        this.userId = null;
+        this.accessToken = null;
+        this.isDon = false;
+        this.isAdmin = false;
+        this.accessChecked = false;
         
         this.init();
     }
     
-    init() {
-        this.setupEventListeners();
-        this.loadConcerts();
+    async init() {
+        // Сначала проверяем доступ
+        await this.checkAccess();
+        
+        if (this.hasAccess()) {
+            this.setupEventListeners();
+            this.loadConcerts();
+        } else {
+            this.showPaywall();
+        }
+    }
+    
+    async checkAccess() {
+        try {
+            // Получаем информацию о пользователе через VK Bridge
+            if (window.vkBridge) {
+                try {
+                    const userInfo = await window.vkBridge.send('VKWebAppGetUserInfo');
+                    this.userId = userInfo.id;
+                } catch (e) {
+                    console.warn('Не удалось получить user_id через VK Bridge:', e);
+                    // Пытаемся получить из URL параметров
+                    await this.checkAccessViaServer();
+                    return;
+                }
+                
+                // Пытаемся получить токен (опционально, для прямой проверки через API)
+                try {
+                    const tokenData = await window.vkBridge.send('VKWebAppGetAuthToken', {
+                        app_id: 54335646, // VK App ID
+                        scope: 'donut'
+                    });
+                    this.accessToken = tokenData.access_token;
+                } catch (e) {
+                    console.log('Не удалось получить токен через VK Bridge, используем серверную проверку');
+                }
+                
+                // Проверяем статус дона и админа
+                await Promise.all([
+                    this.checkDonStatus(),
+                    this.checkAdminStatus()
+                ]);
+            } else {
+                // Если VK Bridge недоступен, используем серверную проверку
+                await this.checkAccessViaServer();
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке доступа:', error);
+            // В случае ошибки используем серверную проверку
+            await this.checkAccessViaServer();
+        }
+        
+        this.accessChecked = true;
+    }
+    
+    async checkDonStatus() {
+        if (!this.userId) {
+            // Если нет user_id, используем серверную проверку (она попытается получить user_id из URL)
+            await this.checkAccessViaServer();
+            return;
+        }
+        
+        try {
+            // Если есть токен, проверяем через API напрямую
+            if (this.accessToken) {
+                const response = await fetch(
+                    `${this.VK_API_URL}donut.isDon?` +
+                    `user_id=${this.userId}&` +
+                    `owner_id=-${this.GROUP_ID}&` +
+                    `access_token=${this.accessToken}&` +
+                    `v=${this.VK_API_VERSION}`
+                );
+                
+                const data = await response.json();
+                if (data.response === true) {
+                    this.isDon = true;
+                    return;
+                }
+            }
+            
+            // Если нет токена или проверка не удалась, используем серверную проверку
+            // Но только если еще не проверяли через сервер
+            if (!this.isDon && !this.isAdmin) {
+                await this.checkAccessViaServer();
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке статуса дона:', error);
+            // Используем серверную проверку только если еще не проверяли
+            if (!this.isDon && !this.isAdmin) {
+                await this.checkAccessViaServer();
+            }
+        }
+    }
+    
+    async checkAdminStatus() {
+        if (!this.userId) return;
+        
+        try {
+            // Проверяем через серверный endpoint
+            const response = await fetch(
+                `https://permlive.ru/api/vk/check-admin/?user_id=${this.userId}&group_id=${this.GROUP_ID}`
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.isAdmin = data.is_admin === true;
+            }
+        } catch (error) {
+            console.error('Ошибка при проверке статуса админа:', error);
+        }
+    }
+    
+    async checkAccessViaServer() {
+        if (!this.userId) {
+            // Пытаемся получить user_id из URL параметров или другим способом
+            const urlParams = new URLSearchParams(window.location.search);
+            const vkUserId = urlParams.get('vk_user_id');
+            if (vkUserId) {
+                this.userId = parseInt(vkUserId);
+            } else {
+                // Если user_id все еще нет, показываем paywall
+                // (возможно пользователь не авторизован в VK)
+                console.warn('Не удалось получить user_id для проверки доступа');
+                return;
+            }
+        }
+        
+        try {
+            // Проверяем через серверный endpoint
+            const response = await fetch(
+                `https://permlive.ru/api/vk/check-don/?user_id=${this.userId}&group_id=${this.GROUP_ID}`
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.isDon = data.is_don === true;
+                this.isAdmin = data.is_admin === true;
+            } else {
+                console.error('Ошибка при проверке доступа на сервере:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error('Ошибка при серверной проверке доступа:', error);
+        }
+    }
+    
+    hasAccess() {
+        return this.isDon || this.isAdmin;
+    }
+    
+    showPaywall() {
+        const appContainer = document.querySelector('.app-container');
+        appContainer.innerHTML = `
+            <div class="paywall-container">
+                <div class="paywall-content">
+                    <div class="paywall-icon">🔒</div>
+                    <h1 class="paywall-title">Доступ только для подписчиков</h1>
+                    <p class="paywall-description">
+                        Это приложение доступно только для подписчиков VK Donut сообщества "Живое!".
+                        Подпишитесь, чтобы получить доступ к афише концертов Перми.
+                    </p>
+                    <a href="https://vk.com/club${this.GROUP_ID}" target="_blank" class="paywall-button">
+                        Перейти к подписке
+                    </a>
+                    <button onclick="location.reload()" class="paywall-button paywall-button-secondary">
+                        Обновить страницу
+                    </button>
+                    <p class="paywall-note">
+                        После подписки нажмите "Обновить страницу"
+                    </p>
+                </div>
+            </div>
+        `;
     }
     
     setupEventListeners() {

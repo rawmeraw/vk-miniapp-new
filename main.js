@@ -26,15 +26,9 @@ class ConcertApp {
     }
     
     async init() {
-        // Сначала проверяем доступ
-        await this.checkAccess();
-        
-        if (this.hasAccess()) {
-            this.setupEventListeners();
-            this.loadConcerts();
-        } else {
-            this.showPaywall();
-        }
+        // Пропускаем проверку доступа - приложение доступно для всех
+        this.setupEventListeners();
+        this.loadConcerts();
     }
     
     async checkAccess() {
@@ -55,18 +49,14 @@ class ConcertApp {
                 try {
                     const tokenData = await window.vkBridge.send('VKWebAppGetAuthToken', {
                         app_id: 54335646, // VK App ID
-                        scope: 'donut'
+                        scope: 'friends'
                     });
                     this.accessToken = tokenData.access_token;
                 } catch (e) {
-                    console.log('Не удалось получить токен через VK Bridge, используем серверную проверку');
+                    console.log('Не удалось получить токен через VK Bridge');
                 }
                 
-                // Проверяем статус дона и админа
-                await Promise.all([
-                    this.checkDonStatus(),
-                    this.checkAdminStatus()
-                ]);
+                // Пропускаем проверку статуса дона и админа
             } else {
                 // Если VK Bridge недоступен, используем серверную проверку
                 await this.checkAccessViaServer();
@@ -171,7 +161,7 @@ class ConcertApp {
     }
     
     hasAccess() {
-        return this.isDon || this.isAdmin;
+        return true; // Доступ для всех пользователей
     }
     
     showPaywall() {

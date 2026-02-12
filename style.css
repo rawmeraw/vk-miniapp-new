@@ -564,7 +564,7 @@ body {
 /* Карточка концерта */
 .concert-card {
     background: #fff;
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
